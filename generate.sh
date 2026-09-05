@@ -4,17 +4,71 @@
 # Based on multiduplikator's README script, with:
 #   - Spamhaus EDROP, DShield, and ThreatFox added
 #   - HTTP retries + polite User-Agent
-#   - Soft-fail: tolerates up to 2 failed feeds
+#   - Soft-fail: tolerates up to MAX_FAILED_FEEDS failed feeds
 #   - Tor exits split into their own list (opt-in on the router side)
 #
 # Requires: curl, gawk, sed, grep (all default on ubuntu-latest).
 
 set -eu
-
 export LC_ALL=C
 
+# ============================================================
+# CONFIG
+# ============================================================
+
 UA="Davie3/mikrotik_blocklist regenerator (github.com/Davie3/mikrotik_blocklist)"
+
 MAX_FAILED_FEEDS=2
+
+CURL_CONNECT_TIMEOUT=30
+CURL_MAX_TIME=180
+CURL_RETRIES=3
+CURL_RETRY_DELAY=5
+
+# Always appended to the main tiers even if no feed reports it.
+# 240.0.0.0/4 is IANA-reserved; no legitimate host should be there.
+RESERVED_APPEND="240.0.0.0/4"
+
+# ============================================================
+# FEEDS
+# ============================================================
+# Format: <tier>|<final_filename>|<display_name>|<url>
+#
+# tier:
+#   s   -> Standard (also in Large and XL)
+#   l   -> Large only (also in XL)
+#   xl  -> XL only
+#   tor -> Tor list (separate; never in main tiers)
+#
+# final_filename: name of the file the extractor reads. For feeds that
+# need format-specific preprocessing (see PREPROCESS below), the raw
+# download goes to <final_filename>.raw and the preprocess step writes
+# the transformed data to <final_filename>.
+
+FEEDS=$(cat <<'EOF'
+s|spamhaus_drop.out_s|Spamhaus DROP|https://www.spamhaus.org/drop/drop.txt
+s|spamhaus_edrop.out_s|Spamhaus EDROP|https://www.spamhaus.org/drop/edrop.txt
+s|sslbl.out_s|SSL Blacklist|https://sslbl.abuse.ch/blacklist/sslipblacklist.txt
+s|blocklist_de.out_s|Blocklist.de|https://lists.blocklist.de/lists/all.txt
+s|feodo.out_s|Feodo Tracker|https://feodotracker.abuse.ch/downloads/ipblocklist.txt
+s|threatfox.out_s|ThreatFox|https://threatfox.abuse.ch/export/csv/ip-port/recent/
+s|dshield.out_s|DShield|https://www.dshield.org/block.txt
+s|firehol_l1.out_s|FireHOL L1|https://iplists.firehol.org/files/firehol_level1.netset
+s|ipsum_l3.out_s|IPsum L3|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt
+l|cinsarmy.out_l|CINS Army|https://cinsscore.com/list/ci-badguys.txt
+xl|ipsum_l1.out_xl|IPsum L1|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/1.txt
+tor|tor_exits.out_tor|Tor Exit Nodes|https://raw.githubusercontent.com/SecOps-Institute/Tor-IP-Addresses/master/tor-exit-nodes.lst
+EOF
+)
+
+# Feeds whose raw format the generic extractor cannot parse; each of
+# these downloads to <name>.raw and is transformed in the PREPROCESS step.
+# Names must match a "final_filename" from FEEDS.
+PREPROCESS_DSHIELD="dshield.out_s"
+
+# ============================================================
+# SCRIPT
+# ============================================================
 
 OUTDIR="$(pwd)"
 TMPDIR=$(mktemp -d)
@@ -28,8 +82,11 @@ cd "$TMPDIR"
 download() {
     url="$1"; output="$2"; name="$3"
     if curl -sfL \
-            --connect-timeout 30 --max-time 180 \
-            --retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors \
+            --connect-timeout "$CURL_CONNECT_TIMEOUT" \
+            --max-time "$CURL_MAX_TIME" \
+            --retry "$CURL_RETRIES" \
+            --retry-delay "$CURL_RETRY_DELAY" \
+            --retry-connrefused --retry-all-errors \
             -A "$UA" \
             "$url" -o "$output" 2>/dev/null; then
         if [ -s "$output" ]; then
@@ -46,66 +103,60 @@ download() {
 
 echo "Downloading blocklists..."
 
-# Suffix legend:
-#   .out_s    -> Standard tier (also included in Large and XL)
-#   .out_l    -> Large tier only (also included in XL)
-#   .out_xl   -> XL tier only
-#   .out_tor  -> Tor list (separate, never in main tiers)
+# Iterate FEEDS in a subshell so background downloads and the trailing
+# `wait` share the same shell context (pipe subshell). The outer `echo`
+# blocks until this subshell (including the internal wait) completes.
+echo "$FEEDS" | {
+    while IFS='|' read -r tier output name url; do
+        [ -z "$tier" ] && continue
+        if [ "$output" = "$PREPROCESS_DSHIELD" ]; then
+            dl_target="$output.raw"
+        else
+            dl_target="$output"
+        fi
+        download "$url" "$dl_target" "$name" &
+    done
+    wait
+}
 
-download "https://raw.githubusercontent.com/SecOps-Institute/Tor-IP-Addresses/master/tor-exit-nodes.lst" \
-         "tor_exits.out_tor" "Tor Exit Nodes" &
-download "https://www.spamhaus.org/drop/drop.txt" \
-         "spamhaus_drop.out_s" "Spamhaus DROP" &
-download "https://www.spamhaus.org/drop/edrop.txt" \
-         "spamhaus_edrop.out_s" "Spamhaus EDROP" &
-download "https://sslbl.abuse.ch/blacklist/sslipblacklist.txt" \
-         "sslbl.out_s" "SSL Blacklist" &
-download "https://lists.blocklist.de/lists/all.txt" \
-         "blocklist_de.out_s" "Blocklist.de" &
-download "https://cinsscore.com/list/ci-badguys.txt" \
-         "cinsarmy.out_l" "CINS Army" &
-download "https://feodotracker.abuse.ch/downloads/ipblocklist.txt" \
-         "feodo.out_s" "Feodo Tracker" &
-download "https://threatfox.abuse.ch/export/csv/ip-port/recent/" \
-         "threatfox.out_s" "ThreatFox" &
-download "https://www.dshield.org/block.txt" \
-         "dshield.out_s.raw" "DShield" &
-download "https://iplists.firehol.org/files/firehol_level1.netset" \
-         "firehol_l1.out_s" "FireHOL L1" &
-download "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/1.txt" \
-         "ipsum_l1.out_xl" "IPsum L1" &
-download "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt" \
-         "ipsum_l3.out_s" "IPsum L3" &
-wait
-
-# DShield ships as "startIP<TAB>endIP<TAB>netmask<TAB>..." per data row.
-# The generic extractor would treat startIP and endIP as isolated /32s and
-# miss everything in between, so convert to CIDR before extraction.
-if [ -s dshield.out_s.raw ]; then
-    awk '/^[0-9]/ {print $1"/"$3}' dshield.out_s.raw > dshield.out_s
-    rm -f dshield.out_s.raw
+# Preprocessing: transform any format the generic extractor can't parse.
+# DShield ships "startIP<TAB>endIP<TAB>netmask<TAB>..." per row; the
+# extractor would treat startIP and endIP as isolated /32s and miss
+# everything in between, so convert to CIDR first.
+if [ -s "$PREPROCESS_DSHIELD.raw" ]; then
+    awk '/^[0-9]/ {print $1"/"$3}' "$PREPROCESS_DSHIELD.raw" > "$PREPROCESS_DSHIELD"
+    rm -f "$PREPROCESS_DSHIELD.raw"
 fi
 
 # Soft-fail: count missing/empty feeds; abort only if too many are down.
-EXPECTED="tor_exits.out_tor spamhaus_drop.out_s spamhaus_edrop.out_s \
-          sslbl.out_s blocklist_de.out_s cinsarmy.out_l feodo.out_s \
-          threatfox.out_s dshield.out_s firehol_l1.out_s \
-          ipsum_l1.out_xl ipsum_l3.out_s"
 missing=0
-for f in $EXPECTED; do
-    if [ ! -s "$f" ]; then
-        echo "  ! Skipping missing/empty feed: $f"
+echo "$FEEDS" | while IFS='|' read -r tier output name url; do
+    [ -z "$tier" ] && continue
+    if [ ! -s "$output" ]; then
+        echo "  ! Skipping missing/empty feed: $output ($name)"
         missing=$((missing + 1))
     fi
+    # Print running total so we can grab it after the subshell exits.
+    echo "MISSING=$missing" > "$TMPDIR/.missing_count"
 done
-if [ "$missing" -gt "$MAX_FAILED_FEEDS" ]; then
+missing=$(sed -n 's/^MISSING=//p' "$TMPDIR/.missing_count" 2>/dev/null || echo 0)
+if [ "${missing:-0}" -gt "$MAX_FAILED_FEEDS" ]; then
     echo "  ! $missing feeds failed (threshold: $MAX_FAILED_FEEDS). Aborting."
     exit 1
 fi
-echo "Downloads complete ($missing failed, within tolerance)."
+echo "Downloads complete (${missing:-0} failed, within tolerance)."
 
 echo "Extracting ranges..."
 
+# Reserved-range filter magic numbers (in awk arithmetic form):
+#   16777215                    = 1.0.0.0 - 1                    -> 0.0.0.0/8
+#   167772160..184549375        = 10.0.0.0/8
+#   2130706432..2147483647      = 127.0.0.0/8 (loopback range end padded)
+#   2886729728..2887778303      = 172.16.0.0/12
+#   3232235520..3232301055      = 192.168.0.0/16
+#   >= 3758096384               = 224.0.0.0/3 (multicast + reserved)
+#   879870596                   = 52.113.194.132   (whitelist: Teams)
+#   599449625                   = 35.186.224.25    (whitelist: Teams)
 gawk '
 BEGIN {
     for (i = 0; i <= 32; i++) P[i] = lshift(1, 32-i)
@@ -148,16 +199,19 @@ build_list() {
     base="$1"; shift
     outbase="$OUTDIR/$base"
 
-    sort -n -S 50% "$@" | gawk -v base="$base" -v outbase="$outbase" -v outdir="$OUTDIR" '
+    sort -n -S 50% "$@" | gawk \
+        -v base="$base" \
+        -v outbase="$outbase" \
+        -v outdir="$OUTDIR" \
+        -v reserved_append="$RESERVED_APPEND" '
     BEGIN {
         for (i=0; i<=32; i++) P[i] = lshift(1, i)
         rsc = outbase ".rsc"
-        # Map basename -> _ga.rsc filename suffix.
-        if (base == "blocklist")        ga_suffix = ""
-        else if (base == "blocklist_l") ga_suffix = "_l"
+        if (base == "blocklist")         ga_suffix = ""
+        else if (base == "blocklist_l")  ga_suffix = "_l"
         else if (base == "blocklist_xl") ga_suffix = "_xl"
         else if (base == "tor_blocklist") ga_suffix = "_tor"
-        else ga_suffix = "_" base
+        else                              ga_suffix = "_" base
         ga = outdir "/blocklist_ga" ga_suffix ".rsc"
         txt = outbase ".txt"
         printf "" > txt
@@ -188,21 +242,19 @@ build_list() {
     { emit(cs,ce); cs=$1; ce=$2 }
     END {
         if(NR) emit(cs,ce)
-        # Always block reserved 240.0.0.0/4 in the main tiers.
-        # (The Tor list is a policy list; do not append reserved space to it.)
-        if (base != "tor_blocklist") {
-            addr = "240.0.0.0/4"
-            print addr >> txt
-            print "add list=new_blocklist address=\"" addr "\" comment=\"blocklist\"" >> rsc
-            print ":set newips ($newips,\"" addr "\")" >> ga
+        # Append RESERVED_APPEND to threat tiers only; the Tor list is
+        # a policy list and should contain only Tor exit IPs.
+        if (base != "tor_blocklist" && reserved_append != "") {
+            print reserved_append >> txt
+            print "add list=new_blocklist address=\"" reserved_append "\" comment=\"blocklist\"" >> rsc
+            print ":set newips ($newips,\"" reserved_append "\")" >> ga
             count++
         }
         print "  " base ": " count " entries" > "/dev/stderr"
     }'
 }
 
-# Nullglob-ish: if a tier has no .ranges files (all its feeds failed), the
-# expansion would leave literal patterns; guard with a for-loop check.
+# Guard against empty globs if all feeds in a tier failed.
 have_ranges() {
     for p in "$@"; do
         [ -e "$p" ] && return 0
