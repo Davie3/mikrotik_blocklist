@@ -52,7 +52,7 @@ jobs:
             fi
           done
           for f in blocklist_ga.rsc blocklist_ga_l.rsc blocklist_ga_xl.rsc; do
-            head -n1 "$f" | grep -qx ':global newips [:toarray ""]' \
+            head -n1 "$f" | grep -qxF ':global newips [:toarray ""]' \
               || { echo "::error::$f header wrong"; exit 1; }
             if tail -n +2 "$f" | grep -vE '^:set newips \(\$newips,"[0-9./]+"\)$' | head -1 | grep -q .; then
               echo "::error::$f contains unexpected line(s)"; exit 1
