@@ -1,13 +1,6 @@
 # MikroTik Blocklist
 
-> **Fork notes (Davie3)**
->
-> This is a personal fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist). Changes from upstream:
-> - `generate.sh` — the gawk aggregator script extracted from the README and committed as a reviewed, pinned file (audit target).
-> - `.github/workflows/update_blocklist.yml` — runs `generate.sh` every 3 hours on a GitHub-hosted runner, validates the output shape and entry counts, commits any diff. Actions are SHA-pinned; `permissions:` is scoped; `persist-credentials: false`.
-> - Router only ever fetches `.rsc` files from this fork (`raw.githubusercontent.com/Davie3/mikrotik_blocklist/...`) with `check-certificate=yes-without-crl`.
->
-> Upstream's own automation is not committed to their repo, so there's nothing here to disable — this fork is fully self-hosted.
+_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.sh`](generate.sh), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds Spamhaus EDROP, DShield, and ThreatFox; splits Tor exits into a separate list._
 
 An aggregated IP blocklist for MikroTik RouterOS firewalls, compiled from multiple threat intelligence sources. Tried and tested on ROS 7.21.2 and Alpine container on ROSE 7.21.2 - latest at the time of writing.
 
