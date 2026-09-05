@@ -14,23 +14,34 @@ This project provides pre-aggregated blocklists optimized for MikroTik routers. 
 
 | List | File | Entries | Sources |
 |------|------|---------|---------|
-| Standard | `blocklist.txt` / `blocklist_ga.rsc` | ~20k | Core threat feeds |
-| Large | `blocklist_l.txt` / `blocklist_ga_l.rsc` | ~25k | Core + CINS Army |
-| Extra Large | `blocklist_xl.txt` / `blocklist_ga_xl.rsc` | ~68k | All sources including IPsum L1 |
+| Standard | `blocklist.txt` / `blocklist_ga.rsc` | ~30k | Core threat feeds |
+| Large | `blocklist_l.txt` / `blocklist_ga_l.rsc` | ~40k | Core + CINS Army |
+| Extra Large | `blocklist_xl.txt` / `blocklist_ga_xl.rsc` | ~110k | All threat sources including IPsum L1 |
+| Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` | ~1k | Tor exit nodes (policy list, not threat data) |
 
 ## Sources
 
+Threat feeds — go into the main tiers:
+
 | Source | Description | Standard | Large | XL |
 |--------|-------------|:--------:|:-----:|:--:|
-| [Tor Exit Nodes](https://github.com/SecOps-Institute/Tor-IP-Addresses) | Tor exit node IPs | ✓ | ✓ | ✓ |
-| [Spamhaus DROP](https://www.spamhaus.org/drop/) | "Don't Route Or Peer" list | ✓ | ✓ | ✓ |
-| [SSL Blacklist](https://sslbl.abuse.ch/) | Botnet C&C servers | ✓ | ✓ | ✓ |
-| [Blocklist.de](https://lists.blocklist.de/) | Fail2ban reported IPs | ✓ | ✓ | ✓ |
+| [Spamhaus DROP](https://www.spamhaus.org/drop/) | Hijacked / criminal netblocks ("Don't Route Or Peer") | ✓ | ✓ | ✓ |
+| [Spamhaus EDROP](https://www.spamhaus.org/drop/) | Extended DROP (suballocations) | ✓ | ✓ | ✓ |
+| [SSL Blacklist](https://sslbl.abuse.ch/) | IPs hosting known malicious TLS certs | ✓ | ✓ | ✓ |
 | [Feodo Tracker](https://feodotracker.abuse.ch/) | Banking trojan C&C servers | ✓ | ✓ | ✓ |
-| [FireHOL Level 1](https://iplists.firehol.org/) | Aggregated threat intelligence | ✓ | ✓ | ✓ |
-| [IPsum Level 3](https://github.com/stamparm/ipsum) | High-confidence threat IPs (3+ hits) | ✓ | ✓ | ✓ |
-| [CINS Army](https://cinsscore.com/) | Collective Intelligence Network Security | | ✓ | ✓ |
-| [IPsum Level 1](https://github.com/stamparm/ipsum) | Broader threat IPs (1+ hits) | | | ✓ |
+| [ThreatFox](https://threatfox.abuse.ch/) | Active malware campaign IOCs (IP:port export) | ✓ | ✓ | ✓ |
+| [DShield](https://www.dshield.org/) | SANS ISC top attackers (startIP-endIP-netmask format) | ✓ | ✓ | ✓ |
+| [Blocklist.de](https://lists.blocklist.de/) | Fail2ban-reported IPs across participating servers | ✓ | ✓ | ✓ |
+| [FireHOL Level 1](https://iplists.firehol.org/) | Aggregated high-confidence threat intelligence | ✓ | ✓ | ✓ |
+| [IPsum Level 3](https://github.com/stamparm/ipsum) | High-confidence threat IPs (3+ list hits) | ✓ | ✓ | ✓ |
+| [CINS Army](https://cinsscore.com/) | Sentinel IPS community feed | | ✓ | ✓ |
+| [IPsum Level 1](https://github.com/stamparm/ipsum) | Broader threat IPs (1+ list hits) | | | ✓ |
+
+Policy list — separate file, opt-in on the router:
+
+| Source | Description | File |
+|--------|-------------|------|
+| [Tor Exit Nodes](https://github.com/SecOps-Institute/Tor-IP-Addresses) | Public Tor exit relays (privacy users, not attackers per se) | `tor_blocklist.*`, `blocklist_ga_tor.rsc` |
 
 ## Filtered Addresses
 
