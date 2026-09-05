@@ -1,0 +1,88 @@
+name: update_blocklist
+
+on:
+  schedule:
+    # Running every 3h
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update_blocklist-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Clone Project
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gawk
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gawk
+
+      - name: Generate Blocklists
+        run: |
+          chmod +x ./generate.sh
+          ./generate.sh
+
+      - name: Validate Generated Lists
+        run: |
+          set -euo pipefail
+          for f in blocklist.rsc blocklist.txt blocklist_ga.rsc \
+                   blocklist_l.rsc blocklist_l.txt blocklist_ga_l.rsc \
+                   blocklist_xl.rsc blocklist_xl.txt blocklist_ga_xl.rsc; do
+            test -s "$f" || { echo "::error::$f is missing or empty"; exit 1; }
+          done
+          # Shape checks: only expected RouterOS command prefixes appear.
+          for f in blocklist.rsc blocklist_l.rsc blocklist_xl.rsc; do
+            head -n1 "$f" | grep -qx "/ip firewall address-list" \
+              || { echo "::error::$f header wrong"; exit 1; }
+            # Every non-header line must be an add directive with our list name.
+            if tail -n +2 "$f" | grep -vE '^add list=new_blocklist address="[0-9./]+" comment="blocklist"$' | head -1 | grep -q .; then
+              echo "::error::$f contains unexpected line(s)"; exit 1
+            fi
+          done
+          for f in blocklist_ga.rsc blocklist_ga_l.rsc blocklist_ga_xl.rsc; do
+            head -n1 "$f" | grep -qx ':global newips [:toarray ""]' \
+              || { echo "::error::$f header wrong"; exit 1; }
+            if tail -n +2 "$f" | grep -vE '^:set newips \(\$newips,"[0-9./]+"\)$' | head -1 | grep -q .; then
+              echo "::error::$f contains unexpected line(s)"; exit 1
+            fi
+          done
+          # Sanity: entry counts within expected ranges (bad feeds fail loudly).
+          std=$(wc -l < blocklist.txt)
+          lg=$(wc -l < blocklist_l.txt)
+          xl=$(wc -l < blocklist_xl.txt)
+          echo "Entries: standard=$std large=$lg xl=$xl"
+          [ "$std" -ge 10000 ] && [ "$std" -le 40000 ] || { echo "::error::standard out of range ($std)"; exit 1; }
+          [ "$lg"  -ge 15000 ] && [ "$lg"  -le 50000 ] || { echo "::error::large out of range ($lg)"; exit 1; }
+          [ "$xl"  -ge 40000 ] && [ "$xl"  -le 120000 ] || { echo "::error::xl out of range ($xl)"; exit 1; }
+
+      - name: Commit Generated Files
+        run: |
+          set -euo pipefail
+          NOW=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          git config --local user.email "noreply@github.actions.bot"
+          git config --local user.name "GitHub Actions"
+          git add blocklist.rsc blocklist.txt blocklist_ga.rsc \
+                  blocklist_l.rsc blocklist_l.txt blocklist_ga_l.rsc \
+                  blocklist_xl.rsc blocklist_xl.txt blocklist_ga_xl.rsc
+          git status
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate blocklists - $NOW"
+          fi
+
+      - name: Push Changes
+        uses: ad-m/github-push-action@881a6320fdb16eb5318c5054f31c218aec2b324c # v1.3.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
