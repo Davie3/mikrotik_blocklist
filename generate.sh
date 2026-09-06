@@ -25,10 +25,6 @@ CURL_MAX_TIME=180
 CURL_RETRIES=3
 CURL_RETRY_DELAY=5
 
-# Always appended to the main tiers even if no feed reports it.
-# 240.0.0.0/4 is IANA-reserved; no legitimate host should be there.
-RESERVED_APPEND="240.0.0.0/4"
-
 # ============================================================
 # FEEDS
 # ============================================================
@@ -217,8 +213,7 @@ build_list() {
     sort -n -S 50% "$@" | gawk \
         -v base="$base" \
         -v outbase="$outbase" \
-        -v outdir="$OUTDIR" \
-        -v reserved_append="$RESERVED_APPEND" '
+        -v outdir="$OUTDIR" '
     BEGIN {
         for (i=0; i<=32; i++) P[i] = lshift(1, i)
         rsc = outbase ".rsc"
@@ -257,14 +252,6 @@ build_list() {
     { emit(cs,ce); cs=$1; ce=$2 }
     END {
         if(NR) emit(cs,ce)
-        # Append RESERVED_APPEND to threat tiers only; the Tor list is
-        # a policy list and should contain only Tor exit IPs.
-        if (base != "tor_blocklist" && reserved_append != "") {
-            print reserved_append >> txt
-            print "add list=new_blocklist address=\"" reserved_append "\" comment=\"blocklist\"" >> rsc
-            print ":set newips ($newips,\"" reserved_append "\")" >> ga
-            count++
-        }
         print "  " base ": " count " entries" > "/dev/stderr"
     }'
 }
