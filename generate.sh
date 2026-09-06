@@ -124,7 +124,18 @@ echo "$FEEDS" | {
 # extractor would treat startIP and endIP as isolated /32s and miss
 # everything in between, so convert to CIDR first.
 if [ -s "$PREPROCESS_DSHIELD.raw" ]; then
-    awk '/^[0-9]/ {print $1"/"$3}' "$PREPROCESS_DSHIELD.raw" > "$PREPROCESS_DSHIELD"
+    # Require column 3 to be a valid CIDR prefix (1-32). Guards against
+    # DShield changing its format: without this, an empty $3 would emit
+    # "ip/" which the extractor treats as /32, silently shrinking each
+    # /24 block to a single host (~99% coverage loss with no error).
+    awk '/^[0-9]/ && $3 ~ /^[0-9]+$/ && $3+0 >= 1 && $3+0 <= 32 {print $1"/"$3}' \
+        "$PREPROCESS_DSHIELD.raw" > "$PREPROCESS_DSHIELD"
+    raw_lines=$(grep -c '^[0-9]' "$PREPROCESS_DSHIELD.raw" 2>/dev/null || echo 0)
+    kept_lines=$(wc -l < "$PREPROCESS_DSHIELD" 2>/dev/null || echo 0)
+    if [ "$raw_lines" -gt 0 ] && [ "$kept_lines" -lt "$((raw_lines / 2))" ]; then
+        echo "  ! DShield preprocess kept $kept_lines/$raw_lines rows (format change?); dropping feed"
+        rm -f "$PREPROCESS_DSHIELD"
+    fi
     rm -f "$PREPROCESS_DSHIELD.raw"
 fi
 
@@ -266,14 +277,27 @@ have_ranges() {
     return 1
 }
 
-if have_ranges "$CACHE"/*.out_s.ranges; then
-    build_list "blocklist"    "$CACHE"/*.out_s.ranges &
-    build_list "blocklist_l"  "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges &
-    build_list "blocklist_xl" "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges "$CACHE"/*.out_xl.ranges &
+# Every tier must produce ranges. If any tier is empty, the previous
+# committed files would silently persist -- fail loudly instead so CI
+# surfaces the outage rather than shipping yesterday's data.
+fail=0
+if ! have_ranges "$CACHE"/*.out_s.ranges; then
+    echo "  ! No standard-tier ranges extracted (all s-tier feeds collapsed?)" >&2
+    fail=1
 fi
-if have_ranges "$CACHE"/*.out_tor.ranges; then
-    build_list "tor_blocklist" "$CACHE"/*.out_tor.ranges &
+if ! have_ranges "$CACHE"/*.out_tor.ranges; then
+    echo "  ! No Tor ranges extracted (Tor feed down?)" >&2
+    fail=1
 fi
+if [ "$fail" -eq 1 ]; then
+    echo "  ! Aborting to avoid committing stale lists." >&2
+    exit 1
+fi
+
+build_list "blocklist"     "$CACHE"/*.out_s.ranges &
+build_list "blocklist_l"   "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges &
+build_list "blocklist_xl"  "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges "$CACHE"/*.out_xl.ranges &
+build_list "tor_blocklist" "$CACHE"/*.out_tor.ranges &
 wait
 
 echo "Done!"
