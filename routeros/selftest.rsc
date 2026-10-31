@@ -21,7 +21,9 @@
 #
 # Usage: upload, then /import file-name=selftest.rsc
 # Set the script name below if yours is named differently. Takes about a
-# minute. Do not run it while the scheduled update is running.
+# minute, and several on small devices such as the hEX, where every lookup
+# in a large address-list takes seconds. Do not run it while the scheduled
+# update is running.
 
 {
 :local scriptName "blocklist-update"
@@ -280,7 +282,8 @@
 # T15: only one run at a time. A copy of the script (scratch list and file,
 # same policies as the real one) runs in the background and waits 5 s at
 # the end; a second start of the same script during that time must stop
-# with a warning, and the first one must complete normally.
+# with a warning, and the first one must complete normally. The test waits
+# up to 10 minutes for it, as one run takes about a minute on a hEX.
 [$writeFile $TF $valid]
 [$setList $TL $before]
 /system script add name="blocklist-selftest-run" policy=ftp,read,write,sensitive,test source=($srcOffline . "\n:delay 5s")
@@ -290,7 +293,11 @@
 :execute {/system script run blocklist-selftest-run}
 :delay 2s
 :set r [$run "/system script run blocklist-selftest-run"]
-:delay 6s
+:local waited 0
+:while (([:len [/system script job find where script="blocklist-selftest-run"]] > 0) && ($waited < 600)) do={
+    :delay 1s
+    :set waited ($waited + 1)
+}
 :local busyNew ([$logCount "another run is still in progress"] - $busyBefore)
 :local startedNew ([$logCount "blocklist-DIFF: === STARTED ==="] - $startedBefore)
 :local doneNew ([$logCount "blocklist-DIFF: === COMPLETED ==="] - $doneBefore)
