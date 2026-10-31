@@ -1,6 +1,6 @@
 # MikroTik Blocklist
 
-_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.sh`](generate.sh), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds DShield, C2IntelFeeds, ET Compromised IPs, Binary Defense, and Turris Sentinel; splits Tor exits into a separate list. Upstream has since moved to [GitLab](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)._
+_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.py`](generate.py), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds DShield, C2IntelFeeds, ET Compromised IPs, Binary Defense, and Turris Sentinel; splits Tor exits into a separate list. Upstream has since moved to [GitLab](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)._
 
 An aggregated IP blocklist for MikroTik RouterOS firewalls, compiled from multiple threat intelligence sources. Tried and tested on ROS 7.21.2 and Alpine container on ROSE 7.21.2 - latest at the time of writing.
 
@@ -12,12 +12,14 @@ This project provides pre-aggregated blocklists optimized for MikroTik routers. 
 
 ## Available Lists
 
-| List                 | File                                         | Entries | Sources                                       |
-| -------------------- | -------------------------------------------- | ------- | --------------------------------------------- |
-| Standard             | `blocklist.txt` / `blocklist_ga.rsc`         | ~30k    | Core threat feeds                             |
-| Large                | `blocklist_l.txt` / `blocklist_ga_l.rsc`     | ~40k    | Core + CINS Army + Turris Sentinel            |
-| Extra Large          | `blocklist_xl.txt` / `blocklist_ga_xl.rsc`   | ~110k   | All threat sources including IPsum L1         |
-| Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` | ~650    | Tor exit nodes (policy list, not threat data) |
+| List                 | Files                                                               | Entries | Sources                                       |
+| -------------------- | ------------------------------------------------------------------- | ------- | --------------------------------------------- |
+| Standard             | `blocklist.txt` / `blocklist_ga.rsc` / `blocklist.json`             | ~30k    | Core threat feeds                             |
+| Large                | `blocklist_l.txt` / `blocklist_ga_l.rsc` / `blocklist_l.json`       | ~40k    | Core + CINS Army + Turris Sentinel            |
+| Extra Large          | `blocklist_xl.txt` / `blocklist_ga_xl.rsc` / `blocklist_xl.json`    | ~110k   | All threat sources including IPsum L1         |
+| Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` / `tor_blocklist.json` | ~650    | Tor exit nodes (policy list, not threat data) |
+
+Each list comes in four formats: `.txt` (one address or CIDR per line), `.rsc` (RouterOS import into `new_blocklist`), `blocklist_ga*.rsc` (fills the global array `$newips` for the differential update script below), and `.json`, a sequence of 32 KB blocks that a RouterOS 7.13+ script reads with `/file read` and `:deserialize` — much faster than the `.rsc` import, and data only (nothing is executed). The `.json` format is byte-compatible with the [GitLab upstream](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)'s, so its update script works with these files.
 
 ## Sources
 
@@ -63,20 +65,29 @@ The following are automatically excluded from feed input:
 
 ## Blocklist Generation
 
-The generator lives in [`generate.sh`](generate.sh) and runs under GitHub Actions every 3 hours via [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml). Feed URLs, tier assignments, timeouts, retry counts, and the soft-fail threshold are all hoisted to constants at the top of `generate.sh` — edit there.
+The generator lives in [`generate.py`](generate.py) and runs under GitHub Actions every 3 hours via [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml). Feed URLs, tier assignments, per-feed minimums, the staleness limit, timeouts and retry counts are all constants at the top of `generate.py` — edit there.
 
-**Dependencies:** `sh`, `sed`, `grep`, `gawk`, `curl`. All present by default on `ubuntu-latest` GitHub runners.
+**Dependencies:** Python 3.10+ (standard library only) and `curl`. Both present by default on `ubuntu-latest` GitHub runners.
+
+**Running locally:** `python3 generate.py` downloads the feeds and writes the lists to the current directory (`--out-dir` to change). `--feeds-dir DIR` reads each feed from `DIR/<id>` instead of downloading. Tests: `python3 -m unittest discover -s tests -v` (offline, about a second).
+
+**Development setup:** `mise install && lefthook install` installs the pinned tools and the git pre-commit hook. The hook formats staged Markdown and workflow YAML (Prettier) and Python (ruff), lints workflows (jactionlint), runs the tests when Python changes, and refuses commits that stage generated lists or `feed_state.json` — CI commits those. `mise run lint`, `mise run format`, `mise run test` and `mise run generate` (writes to `build/`) run the same tools by hand.
 
 **Key behaviors:**
 
 - Per-feed HTTP retries with polite `User-Agent` (`curl --retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors`).
 - Parallel downloads.
 - **Per-feed minimums** — each feed has a `min_ranges` (roughly 10-20% of its normal size). A feed that yields fewer ranges (failed download, deprecated feed still serving its header, truncated file, error page) is dropped.
-- Soft-fail: tolerates up to `MAX_FAILED_FEEDS` (2) feeds below their minimum before aborting.
+- **Stale feeds** — [`feed_state.json`](feed_state.json) records a fingerprint of each feed's extracted ranges and when they last changed. A feed unchanged for more than `STALE_DAYS` (7) is dropped. The lists are still published without it, and the workflow run then fails, so GitHub sends a failure notification. (HTTP `Last-Modified` headers aren't used: several feeds don't send one, and dead feeds were seen reporting recent dates.)
+- Soft-fail: tolerates up to `MAX_FAILED_FEEDS` (2) dropped feeds (below minimum or stale) before aborting.
+- **Dedupe** — all ranges are merged (duplicates, overlaps and adjacent ranges joined) and written as the minimal set of CIDR blocks.
+- **JSON check** — every `.json` list is decoded block by block the way RouterOS reads it and must reproduce its `.txt` exactly before anything is written.
 - **DShield preprocess** — DShield ships `startIP<TAB>endIP<TAB>netmask` per row; the generic regex extractor would treat only the two edge IPs as /32s and miss everything between. A dedicated preprocess step converts to CIDR, with a **format-drift guard** that drops the feed if <50% of rows survive (protects against a silent ~99% coverage loss if DShield changes format).
 - **Reserved-range filter** removes RFC 1918/6598/3927 space, loopback, multicast, and IANA-reserved from feed input at extract time (see [Filtered Addresses](#filtered-addresses) above).
 - Every tier must produce ranges — if any tier is empty, generation aborts loudly so CI surfaces the outage rather than shipping yesterday's committed files.
 - **Delta regression check** in CI fails the run if any tier moves >30% vs previous commit (>50% for the Tor list, which churns faster).
+- CI runs the test suite before every generation; a failing test stops publishing.
+- The workflow steps call scripts in [`scripts/`](scripts/) rather than inline shell: `ci_generate.sh`, `validate_lists.py` (shape, size-bound and delta checks, plus the run summary) and `commit_lists.sh`. Pull requests run `mise run lint` and `mise run test` via [`tests.yml`](.github/workflows/tests.yml).
 
 ---
 
