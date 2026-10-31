@@ -71,6 +71,8 @@ The generator lives in [`generate.py`](generate.py) and runs under GitHub Action
 
 **Running locally:** `python3 generate.py` downloads the feeds and writes the lists to the current directory (`--out-dir` to change). `--feeds-dir DIR` reads each feed from `DIR/<id>` instead of downloading. Tests: `python3 -m unittest discover -s tests -v` (offline, about a second).
 
+**Development setup:** `mise install && lefthook install` installs the pinned tools and the git pre-commit hook. The hook formats staged Markdown and workflow YAML (Prettier) and Python (ruff), lints workflows (jactionlint), runs the tests when Python changes, and refuses commits that stage generated lists or `feed_state.json` — CI commits those. `mise run lint`, `mise run format`, `mise run test` and `mise run generate` (writes to `build/`) run the same tools by hand.
+
 **Key behaviors:**
 
 - Per-feed HTTP retries with polite `User-Agent` (`curl --retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors`).

@@ -1,0 +1,42 @@
+# Git hooks: `mise install && lefthook install` once per clone.
+#
+# Generated lists (.txt/.rsc/.json) and feed_state.json are never formatted:
+# CI writes and commits them, and the .json lists must keep their exact
+# 32 KB block layout for RouterOS.
+
+glob_matcher: doublestar
+
+pre-commit:
+  jobs:
+    - name: generated-files
+      glob:
+        - "blocklist*.{txt,rsc,json}"
+        - "tor_blocklist.{txt,rsc,json}"
+        - "feed_state.json"
+      run: 'echo "Staged generated files -- CI commits these: {staged_files}" && exit 1'
+      fail_text: "Unstage them: git restore --staged <file>"
+
+    - name: prettier
+      glob:
+        - "**/*.md"
+        - "**/*.{yml,yaml}"
+      run: npx --yes prettier@3.6.2 --write {staged_files}
+      stage_fixed: true
+
+    - name: ruff-format
+      glob: "**/*.py"
+      run: ruff format {staged_files}
+      stage_fixed: true
+
+    - name: ruff-check
+      glob: "**/*.py"
+      run: ruff check --fix {staged_files}
+      stage_fixed: true
+
+    - name: jactionlint
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: jactionlint {staged_files}
+
+    - name: tests
+      glob: "**/*.py"
+      run: python3 -m unittest discover -s tests
