@@ -1,0 +1,28 @@
+[tools]
+python = "3.12"
+ruff = "0.17.3"
+jactionlint = "2.4.0"
+shellcheck = "0.11.0" # used by jactionlint for workflow run: scripts
+node = "24" # for prettier via npx
+
+[tasks.test]
+description = "Run the offline test suite"
+run = "python3 -m unittest discover -s tests -v"
+
+[tasks.generate]
+description = "Generate the lists into build/ (not the committed files)"
+run = "python3 generate.py --out-dir build --state build/feed_state.json"
+dir = "{{config_root}}"
+
+[tasks.lint]
+description = "Lint Python, workflows and docs"
+run = [
+  "ruff check .",
+  "ruff format --check .",
+  "jactionlint",
+  "npx --yes prettier@3.6.2 --check README.md .github",
+]
+
+[tasks.format]
+description = "Format Python and docs"
+run = ["ruff format .", "npx --yes prettier@3.6.2 --write README.md .github"]
