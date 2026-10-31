@@ -4,8 +4,9 @@
 #
 # Source of the RouterOS script "blocklist-update" (install.rsc loads it).
 # Adapted from the GitLab upstream's README update script: list URL and
-# file, maxAge 12 h for this fork's 3-hourly GitHub Actions schedule, and
-# the staleness message.
+# file, maxAge 12 h for this fork's 3-hourly GitHub Actions schedule, the
+# staleness message, and logging rules are left alone (upstream silences
+# the first "info" rule during the change).
 :local url "https://raw.githubusercontent.com/Davie3/mikrotik_blocklist/main/blocklist.json"
 :local file "blocklist.json"
 :local listName "prod_blocklist"
@@ -121,15 +122,6 @@
 :local failed 0
 :local skipped 0
 
-# Silence the info logging rule while the list changes (avoids thousands
-# of add/remove messages); its previous state is restored afterwards.
-:local logRule [:pick [/system logging find where topics~"info"] 0]
-:local logWasOff true
-:if ([:typeof $logRule] = "id") do={
-    :set logWasOff [/system logging get $logRule disabled]
-    /system logging disable $logRule
-}
-
 :do {
     /ip firewall address-list
     :foreach id in=[find list=$listName] do={
@@ -168,12 +160,10 @@
         }
     }
 } on-error={
-    :if (([:typeof $logRule] = "id") && !$logWasOff) do={ /system logging enable $logRule }
     :log error "blocklist-DIFF: failed after removing $removed and adding $added entries"
     :error "blocklist update failed"
 }
 
-:if (([:typeof $logRule] = "id") && !$logWasOff) do={ /system logging enable $logRule }
 :set bl
 
 :local finalCount [:len [/ip firewall address-list find list=$listName]]

@@ -141,7 +141,7 @@ To find out which entry blocked a connection, log the drops for a while, then lo
 
 5. **Security:** the script verifies the server's TLS certificate (`check-certificate=yes-without-crl`). RouterOS 7.21+ trusts its built-in root CAs for `fetch` by default (`/certificate settings print`). As a second line of defence, the size and prefix limits above stop a tampered list from blocking large parts of the internet.
 
-6. **Logging:** the script silences the `info` logging rule only while the list is being changed, to avoid thousands of "address-list entry added/removed" messages. Afterwards, or if the update fails, the rule is restored to its previous state.
+6. **Logging:** the script doesn't change logging rules. RouterOS logs every added or removed entry as `system,info` ("address list entry added by ..."), so a run can add a few thousand lines to the log.
 
 7. **Why JSON blocks:** RouterOS arrays are copied whenever they are modified, so building a list one entry at a time is slow. `:deserialize` builds each block's keyed array natively in one call. The blocks are 32 KB because `/file read` reads at most that much per call.
 
