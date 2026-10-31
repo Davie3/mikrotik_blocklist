@@ -87,6 +87,7 @@ The generator lives in [`generate.py`](generate.py) and runs under GitHub Action
 - Every tier must produce ranges — if any tier is empty, generation aborts loudly so CI surfaces the outage rather than shipping yesterday's committed files.
 - **Delta regression check** in CI fails the run if any tier moves >30% vs previous commit (>50% for the Tor list, which churns faster).
 - CI runs the test suite before every generation; a failing test stops publishing.
+- The workflow steps call scripts in [`scripts/`](scripts/) rather than inline shell: `ci_generate.sh`, `validate_lists.py` (shape, size-bound and delta checks, plus the run summary) and `commit_lists.sh`. Pull requests run `mise run lint` and `mise run test` via [`tests.yml`](.github/workflows/tests.yml).
 
 ---
 

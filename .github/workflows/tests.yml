@@ -1,7 +1,9 @@
 name: tests
 
-# Runs the offline test suite on pull requests. update_blocklist.yml can't
-# be reused here: its last steps commit and push to main.
+# Lint and test on pull requests, with the tool versions pinned in mise.toml.
+# update_blocklist.yml can't be reused here: its last steps commit and push
+# to main. (That job keeps the first-party actions/setup-python, since it
+# holds contents: write; this one is read-only.)
 on:
   pull_request:
   workflow_dispatch:
@@ -13,9 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -24,5 +26,11 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up mise
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+
+      - name: Lint
+        run: mise run lint
+
       - name: Run Tests
-        run: python3 -m unittest discover -s tests -v
+        run: mise run test
