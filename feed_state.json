@@ -1,0 +1,50 @@
+{
+  "binarydefense": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "6228a284cdafa3d04428fb24ee93cb8be31ec4e15877d14a100e4ad206ba7d2f"
+  },
+  "blocklist_de": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "f5c0820aba45df8cf80839ae278fa7ecba4b8e191014d0e22b3cc50177d030dc"
+  },
+  "c2intel": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "91163d83d2d391d83d1c3cb1e99aa6533689feb2d1eafa341a0ffdf6551da140"
+  },
+  "cinsarmy": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "87a5208e25a78ccf56c607dc8e83795d6e90c6f5d88660c17dece5f3a16e2e8e"
+  },
+  "dshield": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "73f5c3300f03a2d3bf7c83b351220d9a46a21bf895c3fe852faacb5412284dba"
+  },
+  "et_compromised": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "6eb82eb1e59f998055c65e5daa346cd904d3f053f0ab7f01263e5283aa20c898"
+  },
+  "firehol_l1": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "bd7fef13bfeb85d0d3868991f8136150aad04ef65015b6c5e0b6b2a558742c24"
+  },
+  "ipsum_l1": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "23db050e4b20a95fa220131d5982aef72866aceda2573ecd9e4903f78d602c5e"
+  },
+  "ipsum_l3": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "b809403f341bbe34468f328772ed865b3dd65a749651cb9f717f3c3a45c61dd1"
+  },
+  "spamhaus_drop": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "dc19b603e2af38891343420c49e5d48e987a92660e3461e14a56666d8c28871f"
+  },
+  "tor_exits": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "a2ceba22c0393b7c3149beb7fd52698da9eba054b98f35e186154ce71bd64368"
+  },
+  "turris": {
+    "changed": "2026-10-31T18:55:28Z",
+    "sha256": "817c37abcb20638bada001628167ec38d79a1abd26e83a3278825a0969f9a7df"
+  }
+}
