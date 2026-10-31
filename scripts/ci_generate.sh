@@ -7,6 +7,7 @@
 set -u
 
 rc=0
-python3 generate.py || rc=$?
+# -u: unbuffered, so progress (stdout) and errors (stderr) stay in order in the log.
+python3 -u generate.py || rc=$?
 echo "rc=$rc" >>"$GITHUB_OUTPUT"
 [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]

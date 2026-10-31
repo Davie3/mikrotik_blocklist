@@ -62,5 +62,16 @@ class TestValidate(unittest.TestCase):
         self.assertEqual(errors, ["t.txt delta 50% exceeds 30% threshold"])
 
 
+class TestGeneratorLists(unittest.TestCase):
+    def test_every_generated_list_is_checked(self):
+        lists = v.generator_lists()
+        self.assertEqual([row[1] for row in lists], [f"{base}.txt" for base, _, _ in v.generate.LISTS])
+        self.assertEqual(lists[0], ("Standard", "blocklist.txt", "blocklist.rsc", "blocklist_ga.rsc", "blocklist.json", 8000, 60000, 30))
+
+    def test_list_without_bounds_is_an_error(self):
+        with self.assertRaisesRegex(ValueError, "no bounds configured for newlist"):
+            v.generator_lists(gen_lists=[*v.generate.LISTS, ("newlist", ("s",), "blocklist_ga_new.rsc")])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -24,7 +24,9 @@ Exit codes:
   0  lists written
   1  error; nothing written
   2  lists written, but stale feeds were left out. CI publishes the lists
-     and then fails the run, so GitHub sends a notification.
+     (unless dropping the feed moved a list past the validator's delta
+     limit, which blocks publishing) and then fails the run, so GitHub
+     sends a notification.
 
 Requires: Python 3.10+ (standard library only) and curl.
 """
