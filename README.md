@@ -145,7 +145,7 @@ To find out which entry blocked a connection, log the drops for a while, then lo
 
 7. **Why JSON blocks:** RouterOS arrays are copied whenever they are modified, so building a list one entry at a time is slow. `:deserialize` builds each block's keyed array natively in one call. The blocks are 32 KB because `/file read` reads at most that much per call.
 
-8. **Performance:** the GitLab upstream measured 21–24 s for its large list (~36k entries) on a CCR2004-16G-2S+. The hEX has a much slower CPU; `:put [:time {/system script run blocklist-update}]` shows yours.
+8. **Performance:** on a hEX (RB750Gr3, RouterOS 7.23.5) with the Standard list, an update that kept 27,219 entries, removed 495 and added 378 took 3 min 21 s. Most of that is searching the address-list, which takes about 18 s per search there. The GitLab upstream measured 21–24 s for its large list (~36k entries) on a CCR2004-16G-2S+. `:put [:time {/system script run blocklist-update}]` shows yours.
 
 ### Troubleshooting
 
