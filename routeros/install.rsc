@@ -12,7 +12,8 @@
 #    remove them once the new update works.
 # 3. Creates or updates the scheduler entry.
 # 4. Adds two raw prerouting drop rules: from listed sources arriving on
-#    $wanList, and to listed destinations from $lanList. They go before the
+#    $wanList, and to listed destinations from any other interface (LAN,
+#    VLANs, VPNs: everything not in $wanList). They go before the
 #    first old drop rule for the list (so a bypass rule above it stays
 #    above them), or at the top of the chain if there is none. Then the old
 #    drop rules are disabled.
@@ -24,7 +25,6 @@
 :local scriptName "blocklist-update"
 :local srcFile "blocklist-update.rsc"
 :local wanList "WAN"
-:local lanList "LAN"
 :local interval 3h
 :local startTime 00:40:00
 
@@ -52,10 +52,9 @@
 :if (([:len $listName] = 0) || ([:typeof [:find $src "blocklist-DIFF"]] = "nil")) do={
     :error "install: $srcFile does not look like the update script"
 }
-:foreach l in=($wanList, $lanList) do={
-    :if ([:len [/interface list find name=$l]] = 0) do={ :error "install: interface list $l not found, set wanList/lanList" }
-    :if ([:len [/interface list member find list=$l]] = 0) do={ :error "install: interface list $l has no members" }
-}
+:if ([:len [/interface list find name=$wanList]] = 0) do={ :error "install: interface list $wanList not found, create it or set wanList" }
+:if ([:len [/interface list member find list=$wanList]] = 0) do={ :error "install: interface list $wanList has no members" }
+:local notWan ("!" . $wanList)
 
 # ------------------------------------------------------- 1. script
 # A scheduled /tool fetch that saves a file needs ftp and sensitive on the
@@ -121,13 +120,13 @@
 :set id [/ip firewall raw find where comment=$cDst]
 :if ([:len $id] = 0) do={
     :if ([:typeof $anchor] = "id") do={
-        /ip firewall raw add chain=prerouting action=drop in-interface-list=$lanList dst-address-list=$listName comment=$cDst place-before=$anchor
+        /ip firewall raw add chain=prerouting action=drop in-interface-list=$notWan dst-address-list=$listName comment=$cDst place-before=$anchor
     } else={
-        /ip firewall raw add chain=prerouting action=drop in-interface-list=$lanList dst-address-list=$listName comment=$cDst
+        /ip firewall raw add chain=prerouting action=drop in-interface-list=$notWan dst-address-list=$listName comment=$cDst
     }
     :put "install: added raw rule: $cDst"
 } else={
-    /ip firewall raw set $id chain=prerouting action=drop in-interface-list=$lanList dst-address-list=$listName disabled=no
+    /ip firewall raw set $id chain=prerouting action=drop in-interface-list=$notWan dst-address-list=$listName disabled=no
 }
 
 :foreach o in=$oldRules do={

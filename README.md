@@ -108,13 +108,13 @@ The drops are in the RAW table, as in MikroTik's [Building Advanced Firewall](ht
 ```routeros-script
 /ip firewall raw
 add chain=prerouting action=drop in-interface-list=WAN src-address-list=prod_blocklist comment="blocklist-update: drop from listed sources"
-add chain=prerouting action=drop in-interface-list=LAN dst-address-list=prod_blocklist comment="blocklist-update: drop to listed destinations"
+add chain=prerouting action=drop in-interface-list=!WAN dst-address-list=prod_blocklist comment="blocklist-update: drop to listed destinations"
 ```
 
 - packets **from** listed addresses arriving on the WAN (scans, brute force, exploits, and replies to connections a LAN device opened)
-- packets **to** listed addresses from the LAN (an infected client calling its command-and-control server)
+- packets **to** listed addresses from any other interface: LAN, VLANs, VPNs (an infected client calling its command-and-control server)
 
-The interface lists keep each rule to one direction. Without them, the destination rule also drops everything arriving from the internet once the router's own public address is listed (DShield lists whole /24s). The lists contain IPv4 addresses only.
+`WAN` is an interface list holding your internet interface, as in MikroTik's default configuration (`install.rsc` setting `wanList`). It keeps each rule to one direction. Without it, the destination rule also drops everything arriving from the internet once the router's own public address is listed (DShield lists whole /24s). The lists contain IPv4 addresses only.
 
 RAW rules are evaluated top to bottom, so the drops must come before any general accept rule. To exempt addresses from the blocklist (a CDN, a game service), add an accept rule above the drops; it skips the rest of the RAW chain only, and the filter rules still apply:
 
