@@ -1,0 +1,36 @@
+[tools]
+python = "3.12"
+ruff = "0.17.3"
+jactionlint = "2.4.0"
+shellcheck = "0.11.0" # scripts/*.sh, and jactionlint for workflow run: steps
+shfmt = "3.14.1"
+node = "24" # for prettier via npx
+lefthook = "2.2.2"
+
+[tasks.test]
+description = "Run the offline test suite"
+run = "python3 -m unittest discover -s tests -v"
+
+[tasks.generate]
+description = "Generate the lists into build/ (not the committed files)"
+run = "python3 generate.py --out-dir build --state build/feed_state.json"
+dir = "{{config_root}}"
+
+[tasks.lint]
+description = "Lint Python, shell scripts, workflows and docs"
+run = [
+  "ruff check .",
+  "ruff format --check .",
+  "shellcheck scripts/*.sh",
+  "shfmt -i 4 -d scripts",
+  "jactionlint",
+  "npx --yes prettier@3.6.2 --check README.md lefthook.yml .github",
+]
+
+[tasks.format]
+description = "Format Python, shell scripts and docs"
+run = [
+  "ruff format .",
+  "shfmt -i 4 -w scripts",
+  "npx --yes prettier@3.6.2 --write README.md lefthook.yml .github",
+]

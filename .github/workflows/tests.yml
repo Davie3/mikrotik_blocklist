@@ -1,0 +1,36 @@
+name: tests
+
+# Lint and test on pull requests, with the tool versions pinned in mise.toml.
+# update_blocklist.yml can't be reused here: its last steps commit and push
+# to main. (That job keeps the first-party actions/setup-python, since it
+# holds contents: write; this one is read-only.)
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Clone Project
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up mise
+        uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+
+      - name: Lint
+        run: mise run lint
+
+      - name: Run Tests
+        run: mise run test
