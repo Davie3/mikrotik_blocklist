@@ -1,6 +1,6 @@
 # MikroTik Blocklist
 
-_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.sh`](generate.sh), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds DShield, C2IntelFeeds, and ET Compromised IPs; splits Tor exits into a separate list. Upstream has since moved to [GitLab](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)._
+_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.sh`](generate.sh), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds DShield, C2IntelFeeds, ET Compromised IPs, Binary Defense, and Turris Sentinel; splits Tor exits into a separate list. Upstream has since moved to [GitLab](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)._
 
 An aggregated IP blocklist for MikroTik RouterOS firewalls, compiled from multiple threat intelligence sources. Tried and tested on ROS 7.21.2 and Alpine container on ROSE 7.21.2 - latest at the time of writing.
 
@@ -15,7 +15,7 @@ This project provides pre-aggregated blocklists optimized for MikroTik routers. 
 | List                 | File                                         | Entries | Sources                                       |
 | -------------------- | -------------------------------------------- | ------- | --------------------------------------------- |
 | Standard             | `blocklist.txt` / `blocklist_ga.rsc`         | ~30k    | Core threat feeds                             |
-| Large                | `blocklist_l.txt` / `blocklist_ga_l.rsc`     | ~40k    | Core + CINS Army                              |
+| Large                | `blocklist_l.txt` / `blocklist_ga_l.rsc`     | ~40k    | Core + CINS Army + Turris Sentinel            |
 | Extra Large          | `blocklist_xl.txt` / `blocklist_ga_xl.rsc`   | ~110k   | All threat sources including IPsum L1         |
 | Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` | ~650    | Tor exit nodes (policy list, not threat data) |
 
@@ -23,21 +23,23 @@ This project provides pre-aggregated blocklists optimized for MikroTik routers. 
 
 Threat feeds — go into the main tiers:
 
-| Source                                                              | Description                                                        | Standard | Large | XL  |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------ | :------: | :---: | :-: |
-| [Spamhaus DROP](https://www.spamhaus.org/drop/)                     | Hijacked / criminal netblocks ("Don't Route Or Peer")              |    ✓     |   ✓   |  ✓  |
-| [C2IntelFeeds](https://github.com/drb-ra/C2IntelFeeds)              | Cobalt Strike C2 servers found by internet scanning (last 30 days) |    ✓     |   ✓   |  ✓  |
-| [DShield](https://www.dshield.org/)                                 | SANS ISC top attackers (startIP-endIP-netmask format)              |    ✓     |   ✓   |  ✓  |
-| [Blocklist.de](https://lists.blocklist.de/)                         | Fail2ban-reported IPs across participating servers                 |    ✓     |   ✓   |  ✓  |
-| [ET Compromised IPs](https://rules.emergingthreats.net/blockrules/) | Proofpoint Emerging Threats list of known compromised hosts        |    ✓     |   ✓   |  ✓  |
-| [FireHOL Level 1](https://iplists.firehol.org/)                     | Aggregated high-confidence threat intelligence                     |    ✓     |   ✓   |  ✓  |
-| [IPsum Level 3](https://github.com/stamparm/ipsum)                  | High-confidence threat IPs (3+ list hits)                          |    ✓     |   ✓   |  ✓  |
-| [CINS Army](https://cinsscore.com/)                                 | Sentinel IPS community feed                                        |          |   ✓   |  ✓  |
-| [IPsum Level 1](https://github.com/stamparm/ipsum)                  | Broader threat IPs (1+ list hits)                                  |          |       |  ✓  |
+| Source                                                                     | Description                                                        | Standard | Large | XL  |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------ | :------: | :---: | :-: |
+| [Spamhaus DROP](https://www.spamhaus.org/drop/)                            | Hijacked / criminal netblocks ("Don't Route Or Peer")              |    ✓     |   ✓   |  ✓  |
+| [C2IntelFeeds](https://github.com/drb-ra/C2IntelFeeds)                     | Cobalt Strike C2 servers found by internet scanning (last 30 days) |    ✓     |   ✓   |  ✓  |
+| [DShield](https://www.dshield.org/)                                        | SANS ISC top attackers (startIP-endIP-netmask format)              |    ✓     |   ✓   |  ✓  |
+| [Blocklist.de](https://lists.blocklist.de/)                                | Fail2ban-reported IPs across participating servers                 |    ✓     |   ✓   |  ✓  |
+| [ET Compromised IPs](https://rules.emergingthreats.net/blockrules/)        | Proofpoint Emerging Threats list of known compromised hosts        |    ✓     |   ✓   |  ✓  |
+| [FireHOL Level 1](https://iplists.firehol.org/)                            | Aggregated high-confidence threat intelligence                     |    ✓     |   ✓   |  ✓  |
+| [IPsum Level 3](https://github.com/stamparm/ipsum)                         | High-confidence threat IPs (3+ list hits)                          |    ✓     |   ✓   |  ✓  |
+| [Binary Defense](https://www.binarydefense.com/banlist.txt)                | Artillery honeypot banlist (attackers seen by honeypots)           |    ✓     |   ✓   |  ✓  |
+| [CINS Army](https://cinsscore.com/)                                        | Sentinel IPS community feed                                        |          |   ✓   |  ✓  |
+| [Turris Sentinel Greylist](https://view.sentinel.turris.cz/greylist-data/) | CZ.NIC: attackers seen by Turris routers' firewalls and honeypots  |          |   ✓   |  ✓  |
+| [IPsum Level 1](https://github.com/stamparm/ipsum)                         | Broader threat IPs (1+ list hits)                                  |          |       |  ✓  |
 
 Retired feeds: Spamhaus EDROP (merged into DROP), SSL Blacklist (deprecated by abuse.ch on 2025-01-03), Feodo Tracker (unmaintained since March 2026), ThreatFox (anonymous export returns 410 Gone since 2026-10-21).
 
-C2IntelFeeds and the DShield block list are licensed CC BY-NC-SA, so the generated lists are for non-commercial use.
+C2IntelFeeds, the DShield block list and the Turris Sentinel Greylist are licensed CC BY-NC-SA, and the Binary Defense banlist is for non-commercial use only, so the generated lists are for non-commercial use.
 
 Policy list — separate file, opt-in on the router:
 

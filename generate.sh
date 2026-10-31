@@ -2,7 +2,8 @@
 # Blocklist aggregator - gawk version (Davie3 fork)
 #
 # Based on multiduplikator's README script, with:
-#   - DShield, C2IntelFeeds and ET Compromised added
+#   - DShield, C2IntelFeeds, ET Compromised, Binary Defense and Turris
+#     Sentinel added
 #   - HTTP retries + polite User-Agent
 #   - Per-feed minimum range counts; soft-fail tolerates up to
 #     MAX_FAILED_FEEDS feeds below their minimum
@@ -56,7 +57,9 @@ s|dshield.out_s|15|DShield|https://www.dshield.org/block.txt
 s|et_compromised.out_s|100|ET Compromised IPs|https://rules.emergingthreats.net/blockrules/compromised-ips.txt
 s|firehol_l1.out_s|1000|FireHOL L1|https://iplists.firehol.org/files/firehol_level1.netset
 s|ipsum_l3.out_s|3000|IPsum L3|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt
+s|binarydefense.out_s|50|Binary Defense|https://www.binarydefense.com/banlist.txt
 l|cinsarmy.out_l|3000|CINS Army|https://cinsscore.com/list/ci-badguys.txt
+l|turris.out_l|1500|Turris Sentinel|https://view.sentinel.turris.cz/greylist-data/greylist-latest.csv
 xl|ipsum_l1.out_xl|20000|IPsum L1|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/1.txt
 tor|tor_exits.out_tor|200|Tor Exit Nodes|https://check.torproject.org/torbulkexitlist
 EOF
