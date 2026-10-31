@@ -4,16 +4,16 @@
     "sha256": "6228a284cdafa3d04428fb24ee93cb8be31ec4e15877d14a100e4ad206ba7d2f"
   },
   "blocklist_de": {
-    "changed": "2026-10-31T18:55:28Z",
-    "sha256": "f5c0820aba45df8cf80839ae278fa7ecba4b8e191014d0e22b3cc50177d030dc"
+    "changed": "2026-10-31T20:55:06Z",
+    "sha256": "c57c5e696155d859ba5a9f4483546432ec1f875cbaff3f3b2cb4a35fbfdfe50c"
   },
   "c2intel": {
     "changed": "2026-10-31T18:55:28Z",
     "sha256": "91163d83d2d391d83d1c3cb1e99aa6533689feb2d1eafa341a0ffdf6551da140"
   },
   "cinsarmy": {
-    "changed": "2026-10-31T18:55:28Z",
-    "sha256": "87a5208e25a78ccf56c607dc8e83795d6e90c6f5d88660c17dece5f3a16e2e8e"
+    "changed": "2026-10-31T20:55:06Z",
+    "sha256": "1855ddbcf21f3f969e208108f5fd4ca59cb63f8fde5d88abac464f907ce2be0f"
   },
   "dshield": {
     "changed": "2026-10-31T18:55:28Z",
