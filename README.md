@@ -1,6 +1,6 @@
 # MikroTik Blocklist
 
-_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.sh`](generate.sh), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds Spamhaus EDROP, DShield, and ThreatFox; splits Tor exits into a separate list._
+_Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.sh`](generate.sh), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds DShield, C2IntelFeeds, and ET Compromised IPs; splits Tor exits into a separate list. Upstream has since moved to [GitLab](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)._
 
 An aggregated IP blocklist for MikroTik RouterOS firewalls, compiled from multiple threat intelligence sources. Tried and tested on ROS 7.21.2 and Alpine container on ROSE 7.21.2 - latest at the time of writing.
 
@@ -17,31 +17,33 @@ This project provides pre-aggregated blocklists optimized for MikroTik routers. 
 | Standard             | `blocklist.txt` / `blocklist_ga.rsc`         | ~30k    | Core threat feeds                             |
 | Large                | `blocklist_l.txt` / `blocklist_ga_l.rsc`     | ~40k    | Core + CINS Army                              |
 | Extra Large          | `blocklist_xl.txt` / `blocklist_ga_xl.rsc`   | ~110k   | All threat sources including IPsum L1         |
-| Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` | ~1k     | Tor exit nodes (policy list, not threat data) |
+| Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` | ~650    | Tor exit nodes (policy list, not threat data) |
 
 ## Sources
 
 Threat feeds — go into the main tiers:
 
-| Source                                             | Description                                           | Standard | Large | XL  |
-| -------------------------------------------------- | ----------------------------------------------------- | :------: | :---: | :-: |
-| [Spamhaus DROP](https://www.spamhaus.org/drop/)    | Hijacked / criminal netblocks ("Don't Route Or Peer") |    ✓     |   ✓   |  ✓  |
-| [Spamhaus EDROP](https://www.spamhaus.org/drop/)   | Extended DROP (suballocations)                        |    ✓     |   ✓   |  ✓  |
-| [SSL Blacklist](https://sslbl.abuse.ch/)           | IPs hosting known malicious TLS certs                 |    ✓     |   ✓   |  ✓  |
-| [Feodo Tracker](https://feodotracker.abuse.ch/)    | Banking trojan C&C servers                            |    ✓     |   ✓   |  ✓  |
-| [ThreatFox](https://threatfox.abuse.ch/)           | Active malware campaign IOCs (IP:port export)         |    ✓     |   ✓   |  ✓  |
-| [DShield](https://www.dshield.org/)                | SANS ISC top attackers (startIP-endIP-netmask format) |    ✓     |   ✓   |  ✓  |
-| [Blocklist.de](https://lists.blocklist.de/)        | Fail2ban-reported IPs across participating servers    |    ✓     |   ✓   |  ✓  |
-| [FireHOL Level 1](https://iplists.firehol.org/)    | Aggregated high-confidence threat intelligence        |    ✓     |   ✓   |  ✓  |
-| [IPsum Level 3](https://github.com/stamparm/ipsum) | High-confidence threat IPs (3+ list hits)             |    ✓     |   ✓   |  ✓  |
-| [CINS Army](https://cinsscore.com/)                | Sentinel IPS community feed                           |          |   ✓   |  ✓  |
-| [IPsum Level 1](https://github.com/stamparm/ipsum) | Broader threat IPs (1+ list hits)                     |          |       |  ✓  |
+| Source                                                              | Description                                                        | Standard | Large | XL  |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------ | :------: | :---: | :-: |
+| [Spamhaus DROP](https://www.spamhaus.org/drop/)                     | Hijacked / criminal netblocks ("Don't Route Or Peer")              |    ✓     |   ✓   |  ✓  |
+| [C2IntelFeeds](https://github.com/drb-ra/C2IntelFeeds)              | Cobalt Strike C2 servers found by internet scanning (last 30 days) |    ✓     |   ✓   |  ✓  |
+| [DShield](https://www.dshield.org/)                                 | SANS ISC top attackers (startIP-endIP-netmask format)              |    ✓     |   ✓   |  ✓  |
+| [Blocklist.de](https://lists.blocklist.de/)                         | Fail2ban-reported IPs across participating servers                 |    ✓     |   ✓   |  ✓  |
+| [ET Compromised IPs](https://rules.emergingthreats.net/blockrules/) | Proofpoint Emerging Threats list of known compromised hosts        |    ✓     |   ✓   |  ✓  |
+| [FireHOL Level 1](https://iplists.firehol.org/)                     | Aggregated high-confidence threat intelligence                     |    ✓     |   ✓   |  ✓  |
+| [IPsum Level 3](https://github.com/stamparm/ipsum)                  | High-confidence threat IPs (3+ list hits)                          |    ✓     |   ✓   |  ✓  |
+| [CINS Army](https://cinsscore.com/)                                 | Sentinel IPS community feed                                        |          |   ✓   |  ✓  |
+| [IPsum Level 1](https://github.com/stamparm/ipsum)                  | Broader threat IPs (1+ list hits)                                  |          |       |  ✓  |
+
+Retired feeds: Spamhaus EDROP (merged into DROP), SSL Blacklist (deprecated by abuse.ch on 2025-01-03), Feodo Tracker (unmaintained since March 2026), ThreatFox (anonymous export returns 410 Gone since 2026-10-21).
+
+C2IntelFeeds and the DShield block list are licensed CC BY-NC-SA, so the generated lists are for non-commercial use.
 
 Policy list — separate file, opt-in on the router:
 
-| Source                                                                 | Description                                                  | File                                      |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
-| [Tor Exit Nodes](https://github.com/SecOps-Institute/Tor-IP-Addresses) | Public Tor exit relays (privacy users, not attackers per se) | `tor_blocklist.*`, `blocklist_ga_tor.rsc` |
+| Source                                                         | Description                                                                                         | File                                      |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| [Tor Exit Nodes](https://check.torproject.org/torbulkexitlist) | Public Tor exit relays, from the Tor Project's bulk exit list (privacy users, not attackers per se) | `tor_blocklist.*`, `blocklist_ga_tor.rsc` |
 
 ## Filtered Addresses
 
@@ -67,7 +69,8 @@ The generator lives in [`generate.sh`](generate.sh) and runs under GitHub Action
 
 - Per-feed HTTP retries with polite `User-Agent` (`curl --retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors`).
 - Parallel downloads.
-- Soft-fail: tolerates up to `MAX_FAILED_FEEDS` (2) missing/empty feeds before aborting.
+- **Per-feed minimums** — each feed has a `min_ranges` (roughly 10-20% of its normal size). A feed that yields fewer ranges (failed download, deprecated feed still serving its header, truncated file, error page) is dropped.
+- Soft-fail: tolerates up to `MAX_FAILED_FEEDS` (2) feeds below their minimum before aborting.
 - **DShield preprocess** — DShield ships `startIP<TAB>endIP<TAB>netmask` per row; the generic regex extractor would treat only the two edge IPs as /32s and miss everything between. A dedicated preprocess step converts to CIDR, with a **format-drift guard** that drops the feed if <50% of rows survive (protects against a silent ~99% coverage loss if DShield changes format).
 - **Reserved-range filter** removes RFC 1918/6598/3927 space, loopback, multicast, and IANA-reserved from feed input at extract time (see [Filtered Addresses](#filtered-addresses) above).
 - Every tier must produce ranges — if any tier is empty, generation aborts loudly so CI surfaces the outage rather than shipping yesterday's committed files.

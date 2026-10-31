@@ -2,9 +2,10 @@
 # Blocklist aggregator - gawk version (Davie3 fork)
 #
 # Based on multiduplikator's README script, with:
-#   - Spamhaus EDROP, DShield, and ThreatFox added
+#   - DShield, C2IntelFeeds and ET Compromised added
 #   - HTTP retries + polite User-Agent
-#   - Soft-fail: tolerates up to MAX_FAILED_FEEDS failed feeds
+#   - Per-feed minimum range counts; soft-fail tolerates up to
+#     MAX_FAILED_FEEDS feeds below their minimum
 #   - Tor exits split into their own list (opt-in on the router side)
 #
 # Requires: curl, gawk, sed, grep (all default on ubuntu-latest).
@@ -28,7 +29,7 @@ CURL_RETRY_DELAY=5
 # ============================================================
 # FEEDS
 # ============================================================
-# Format: <tier>|<final_filename>|<display_name>|<url>
+# Format: <tier>|<final_filename>|<min_ranges>|<display_name>|<url>
 #
 # tier:
 #   s   -> Standard (also in Large and XL)
@@ -40,20 +41,24 @@ CURL_RETRY_DELAY=5
 # need format-specific preprocessing (see PREPROCESS below), the raw
 # download goes to <final_filename>.raw and the preprocess step writes
 # the transformed data to <final_filename>.
+#
+# min_ranges: the feed counts as failed (and is dropped) if it yields
+# fewer ranges than this. Set to roughly 10-20% of the normal count so
+# that dead, deprecated, truncated or error-page downloads are caught --
+# a non-empty file is not enough (deprecated feeds keep serving headers).
 
-FEEDS=$(cat <<'EOF'
-s|spamhaus_drop.out_s|Spamhaus DROP|https://www.spamhaus.org/drop/drop.txt
-s|spamhaus_edrop.out_s|Spamhaus EDROP|https://www.spamhaus.org/drop/edrop.txt
-s|sslbl.out_s|SSL Blacklist|https://sslbl.abuse.ch/blacklist/sslipblacklist.txt
-s|blocklist_de.out_s|Blocklist.de|https://lists.blocklist.de/lists/all.txt
-s|feodo.out_s|Feodo Tracker|https://feodotracker.abuse.ch/downloads/ipblocklist.txt
-s|threatfox.out_s|ThreatFox|https://threatfox.abuse.ch/export/csv/ip-port/recent/
-s|dshield.out_s|DShield|https://www.dshield.org/block.txt
-s|firehol_l1.out_s|FireHOL L1|https://iplists.firehol.org/files/firehol_level1.netset
-s|ipsum_l3.out_s|IPsum L3|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt
-l|cinsarmy.out_l|CINS Army|https://cinsscore.com/list/ci-badguys.txt
-xl|ipsum_l1.out_xl|IPsum L1|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/1.txt
-tor|tor_exits.out_tor|Tor Exit Nodes|https://raw.githubusercontent.com/SecOps-Institute/Tor-IP-Addresses/master/tor-exit-nodes.lst
+FEEDS=$(
+    cat <<'EOF'
+s|spamhaus_drop.out_s|500|Spamhaus DROP|https://www.spamhaus.org/drop/drop.txt
+s|c2intel.out_s|30|C2IntelFeeds|https://raw.githubusercontent.com/drb-ra/C2IntelFeeds/master/feeds/IPC2s-30day.csv
+s|blocklist_de.out_s|5000|Blocklist.de|https://lists.blocklist.de/lists/all.txt
+s|dshield.out_s|15|DShield|https://www.dshield.org/block.txt
+s|et_compromised.out_s|100|ET Compromised IPs|https://rules.emergingthreats.net/blockrules/compromised-ips.txt
+s|firehol_l1.out_s|1000|FireHOL L1|https://iplists.firehol.org/files/firehol_level1.netset
+s|ipsum_l3.out_s|3000|IPsum L3|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt
+l|cinsarmy.out_l|3000|CINS Army|https://cinsscore.com/list/ci-badguys.txt
+xl|ipsum_l1.out_xl|20000|IPsum L1|https://raw.githubusercontent.com/stamparm/ipsum/master/levels/1.txt
+tor|tor_exits.out_tor|200|Tor Exit Nodes|https://check.torproject.org/torbulkexitlist
 EOF
 )
 
@@ -76,15 +81,17 @@ mkdir -p "$CACHE"
 cd "$TMPDIR"
 
 download() {
-    url="$1"; output="$2"; name="$3"
+    url="$1"
+    output="$2"
+    name="$3"
     if curl -sfL \
-            --connect-timeout "$CURL_CONNECT_TIMEOUT" \
-            --max-time "$CURL_MAX_TIME" \
-            --retry "$CURL_RETRIES" \
-            --retry-delay "$CURL_RETRY_DELAY" \
-            --retry-connrefused --retry-all-errors \
-            -A "$UA" \
-            "$url" -o "$output" 2>/dev/null; then
+        --connect-timeout "$CURL_CONNECT_TIMEOUT" \
+        --max-time "$CURL_MAX_TIME" \
+        --retry "$CURL_RETRIES" \
+        --retry-delay "$CURL_RETRY_DELAY" \
+        --retry-connrefused --retry-all-errors \
+        -A "$UA" \
+        "$url" -o "$output" 2>/dev/null; then
         if [ -s "$output" ]; then
             echo "  + $name"
         else
@@ -103,7 +110,7 @@ echo "Downloading blocklists..."
 # `wait` share the same shell context (pipe subshell). The outer `echo`
 # blocks until this subshell (including the internal wait) completes.
 echo "$FEEDS" | {
-    while IFS='|' read -r tier output name url; do
+    while IFS='|' read -r tier output min name url; do
         [ -z "$tier" ] && continue
         if [ "$output" = "$PREPROCESS_DSHIELD" ]; then
             dl_target="$output.raw"
@@ -125,33 +132,15 @@ if [ -s "$PREPROCESS_DSHIELD.raw" ]; then
     # "ip/" which the extractor treats as /32, silently shrinking each
     # /24 block to a single host (~99% coverage loss with no error).
     awk '/^[0-9]/ && $3 ~ /^[0-9]+$/ && $3+0 >= 1 && $3+0 <= 32 {print $1"/"$3}' \
-        "$PREPROCESS_DSHIELD.raw" > "$PREPROCESS_DSHIELD"
+        "$PREPROCESS_DSHIELD.raw" >"$PREPROCESS_DSHIELD"
     raw_lines=$(grep -c '^[0-9]' "$PREPROCESS_DSHIELD.raw" 2>/dev/null || echo 0)
-    kept_lines=$(wc -l < "$PREPROCESS_DSHIELD" 2>/dev/null || echo 0)
+    kept_lines=$(wc -l <"$PREPROCESS_DSHIELD" 2>/dev/null || echo 0)
     if [ "$raw_lines" -gt 0 ] && [ "$kept_lines" -lt "$((raw_lines / 2))" ]; then
         echo "  ! DShield preprocess kept $kept_lines/$raw_lines rows (format change?); dropping feed"
         rm -f "$PREPROCESS_DSHIELD"
     fi
     rm -f "$PREPROCESS_DSHIELD.raw"
 fi
-
-# Soft-fail: count missing/empty feeds; abort only if too many are down.
-missing=0
-echo "$FEEDS" | while IFS='|' read -r tier output name url; do
-    [ -z "$tier" ] && continue
-    if [ ! -s "$output" ]; then
-        echo "  ! Skipping missing/empty feed: $output ($name)"
-        missing=$((missing + 1))
-    fi
-    # Print running total so we can grab it after the subshell exits.
-    echo "MISSING=$missing" > "$TMPDIR/.missing_count"
-done
-missing=$(sed -n 's/^MISSING=//p' "$TMPDIR/.missing_count" 2>/dev/null || echo 0)
-if [ "${missing:-0}" -gt "$MAX_FAILED_FEEDS" ]; then
-    echo "  ! $missing feeds failed (threshold: $MAX_FAILED_FEEDS). Aborting."
-    exit 1
-fi
-echo "Downloads complete (${missing:-0} failed, within tolerance)."
 
 echo "Extracting ranges..."
 
@@ -204,10 +193,38 @@ BEGIN {
 }
 ' ./*.out_*
 
+# Soft-fail: a feed below its min_ranges (including a failed download,
+# which leaves no ranges at all) is dropped; abort only if too many are.
+# Heredoc rather than a pipe so the loop runs in this shell and `failed`
+# survives it.
+echo "Checking feeds..."
+failed=0
+while IFS='|' read -r tier output min name url; do
+    [ -z "$tier" ] && continue
+    ranges="$CACHE/$output.ranges"
+    count=0
+    [ -f "$ranges" ] && count=$(($(wc -l <"$ranges")))
+    if [ "$count" -lt "$min" ]; then
+        echo "  ! $name: $count ranges (minimum $min); dropping feed"
+        rm -f "$ranges"
+        failed=$((failed + 1))
+    else
+        echo "  $name: $count ranges"
+    fi
+done <<EOF
+$FEEDS
+EOF
+if [ "$failed" -gt "$MAX_FAILED_FEEDS" ]; then
+    echo "  ! $failed feeds failed (threshold: $MAX_FAILED_FEEDS). Aborting."
+    exit 1
+fi
+echo "Feeds checked ($failed failed, within tolerance)."
+
 echo "Building lists..."
 
 build_list() {
-    base="$1"; shift
+    base="$1"
+    shift
     outbase="$OUTDIR/$base"
 
     sort -n -S 50% "$@" | gawk \
@@ -281,9 +298,9 @@ if [ "$fail" -eq 1 ]; then
     exit 1
 fi
 
-build_list "blocklist"     "$CACHE"/*.out_s.ranges &
-build_list "blocklist_l"   "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges &
-build_list "blocklist_xl"  "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges "$CACHE"/*.out_xl.ranges &
+build_list "blocklist" "$CACHE"/*.out_s.ranges &
+build_list "blocklist_l" "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges &
+build_list "blocklist_xl" "$CACHE"/*.out_s.ranges "$CACHE"/*.out_l.ranges "$CACHE"/*.out_xl.ranges &
 build_list "tor_blocklist" "$CACHE"/*.out_tor.ranges &
 wait
 
