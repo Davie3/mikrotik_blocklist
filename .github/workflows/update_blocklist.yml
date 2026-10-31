@@ -15,6 +15,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Worst case downloads: 4 curl attempts x 180 s, in parallel.
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
@@ -24,15 +26,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Install gawk
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gawk
+      - name: Run Tests
+        run: python3 -m unittest discover -s tests -v
 
       - name: Generate Blocklists
+        id: generate
         run: |
-          chmod +x ./generate.sh
-          ./generate.sh
+          # Exit 2 = lists written, but stale feeds were left out. Publish
+          # anyway; the last step then fails the run so it gets noticed.
+          rc=0
+          python3 generate.py || rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]
 
       - name: Validate Generated Lists
         run: |
@@ -42,6 +47,8 @@ jobs:
             blocklist_l.rsc blocklist_l.txt blocklist_ga_l.rsc
             blocklist_xl.rsc blocklist_xl.txt blocklist_ga_xl.rsc
             tor_blocklist.rsc tor_blocklist.txt blocklist_ga_tor.rsc
+            blocklist.json blocklist_l.json blocklist_xl.json tor_blocklist.json
+            feed_state.json
           )
           for f in "${MAIN_FILES[@]}"; do
             test -s "$f" || { echo "::error::$f is missing or empty"; exit 1; }
@@ -58,6 +65,7 @@ jobs:
           for f in blocklist_ga.rsc blocklist_ga_l.rsc blocklist_ga_xl.rsc blocklist_ga_tor.rsc; do
             head -n1 "$f" | grep -qxF ':global newips [:toarray ""]' \
               || { echo "::error::$f header wrong"; exit 1; }
+            # shellcheck disable=SC2016  # literal $newips in the regex
             if tail -n +2 "$f" | grep -vE '^:set newips \(\$newips,"[0-9./]+"\)$' | head -1 | grep -q .; then
               echo "::error::$f contains unexpected line(s)"; exit 1
             fi
@@ -126,7 +134,9 @@ jobs:
           git add blocklist.rsc blocklist.txt blocklist_ga.rsc \
                   blocklist_l.rsc blocklist_l.txt blocklist_ga_l.rsc \
                   blocklist_xl.rsc blocklist_xl.txt blocklist_ga_xl.rsc \
-                  tor_blocklist.rsc tor_blocklist.txt blocklist_ga_tor.rsc
+                  tor_blocklist.rsc tor_blocklist.txt blocklist_ga_tor.rsc \
+                  blocklist.json blocklist_l.json blocklist_xl.json tor_blocklist.json \
+                  feed_state.json
           git status
           if ! git diff --cached --quiet; then
             git commit -m "Regenerate blocklists - $NOW"
@@ -137,3 +147,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: main
+
+      - name: Fail on Stale Feeds
+        if: steps.generate.outputs.rc == '2'
+        run: |
+          echo "::error::Stale feeds were left out of the published lists; see the Generate Blocklists step"
+          exit 1
