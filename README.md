@@ -2,7 +2,7 @@
 
 _Fork of [multiduplikator/mikrotik_blocklist](https://github.com/multiduplikator/mikrotik_blocklist) with a self-hosted GitHub Actions generator ([`generate.py`](generate.py), [`.github/workflows/update_blocklist.yml`](.github/workflows/update_blocklist.yml)). Adds DShield, C2IntelFeeds, ET Compromised IPs, Binary Defense, and Turris Sentinel; splits Tor exits into a separate list. Upstream has since moved to [GitLab](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)._
 
-An aggregated IP blocklist for MikroTik RouterOS firewalls, compiled from multiple threat intelligence sources. Tried and tested on ROS 7.21.2 and Alpine container on ROSE 7.21.2 - latest at the time of writing.
+An aggregated IP blocklist for MikroTik RouterOS firewalls, compiled from multiple threat intelligence sources. The RouterOS scripts in [`routeros/`](routeros/) are run on a hEX (RB750Gr3) with RouterOS 7.23.5 and need RouterOS 7.13 or later.
 
 ## Overview
 
@@ -19,7 +19,7 @@ This project provides pre-aggregated blocklists optimized for MikroTik routers. 
 | Extra Large          | `blocklist_xl.txt` / `blocklist_ga_xl.rsc` / `blocklist_xl.json`    | ~110k   | All threat sources including IPsum L1         |
 | Tor exits (separate) | `tor_blocklist.txt` / `blocklist_ga_tor.rsc` / `tor_blocklist.json` | ~650    | Tor exit nodes (policy list, not threat data) |
 
-Each list comes in four formats: `.txt` (one address or CIDR per line), `.rsc` (RouterOS import into `new_blocklist`), `blocklist_ga*.rsc` (fills the global array `$newips` for the differential update script below), and `.json`, a sequence of 32 KB blocks that a RouterOS 7.13+ script reads with `/file read` and `:deserialize` — much faster than the `.rsc` import, and data only (nothing is executed). The `.json` format is byte-compatible with the [GitLab upstream](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)'s, so its update script works with these files.
+Each list comes in four formats: `.txt` (one address or CIDR per line), `.rsc` (RouterOS import into `new_blocklist`), `blocklist_ga*.rsc` (fills the global array `$newips`, see [.rsc Lists](#rsc-lists)), and `.json`, a sequence of 32 KB blocks that the [update script](#routeros-implementation) reads with `/file read` and `:deserialize` — much faster than the `.rsc` import, and data only (nothing is executed). The `.json` format is byte-compatible with the [GitLab upstream](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)'s, so its update script works with these files.
 
 ## Sources
 
@@ -93,118 +93,84 @@ The generator lives in [`generate.py`](generate.py) and runs under GitHub Action
 
 ## RouterOS Implementation
 
-### Firewall Setup
+One script, `blocklist-update`, downloads `blocklist.json`, verifies it and updates the address-list `prod_blocklist` in place: entries that are no longer listed are removed and new ones added, so the list is active at every moment. The file is only data; nothing downloaded is executed. The scripts are in [`routeros/`](routeros/), each with its usage and settings at the top:
 
-Before using the blocklist, ensure you have appropriate firewall rules. Consider using the `raw` table for best performance. See [MikroTik's Advanced Firewall Guide](https://help.mikrotik.com/docs/display/ROS/Building+Advanced+Firewall) for details.
+- [`install.rsc`](routeros/install.rsc) installs or updates the script, its scheduler and the [firewall rules](#firewall-rules).
+- [`blocklist-update.rsc`](routeros/blocklist-update.rsc) is the update script's source.
+- [`selftest.rsc`](routeros/selftest.rsc) runs the installed script against a scratch address-list and checks the update and its failure cases.
 
-Example rule (add to your firewall):
+The default is the Standard list (~28k entries), the right size for small devices like the hEX (256 MB RAM, 16 MB flash). For Large or XL, change `url` and `file` in `blocklist-update.rsc`, and set `maxChange` high enough for the jump on the first run after switching.
 
-```routeros-script
-/ip firewall raw add chain=prerouting src-address-list=prod_blocklist action=drop comment="Drop blocklisted IPs"
-```
+### Firewall Rules
 
-### Script 1: Download
-
-**Policy:** `ftp, read, write, test`
-**Schedule:** Every 3 hours
+The drops are in the RAW table, as in MikroTik's [Building Advanced Firewall](https://help.mikrotik.com/docs/display/ROS/Building+Advanced+Firewall) guide: RAW rules run before connection tracking, so dropped packets cost the router as little as possible. Two rules cover both directions:
 
 ```routeros-script
-:log info "blocklist-DL: started"
-/tool fetch url="https://raw.githubusercontent.com/Davie3/mikrotik_blocklist/main/blocklist_ga.rsc" mode=https check-certificate=yes-without-crl
-:log info "blocklist-DL: finished"
+/ip firewall raw
+add chain=prerouting action=drop in-interface-list=WAN src-address-list=prod_blocklist comment="blocklist-update: drop from listed sources"
+add chain=prerouting action=drop in-interface-list=!WAN dst-address-list=prod_blocklist comment="blocklist-update: drop to listed destinations"
 ```
 
-Use `blocklist_ga.rsc` (Standard tier, ~27k entries) on low-disk devices like the RB750Gr3/hEX; `blocklist_ga_l.rsc` (Large, ~40k) or `blocklist_ga_xl.rsc` (XL, ~110k) on larger boxes.
+- packets **from** listed addresses arriving on the WAN (scans, brute force, exploits, and replies to connections a LAN device opened)
+- packets **to** listed addresses from any other interface: LAN, VLANs, VPNs (an infected client calling its command-and-control server)
 
-### Script 2: Differential Update
+`WAN` is an interface list holding your internet interface, as in MikroTik's default configuration (`install.rsc` setting `wanList`). It keeps each rule to one direction. Without it, the destination rule also drops everything arriving from the internet once the router's own public address is listed (DShield lists whole /24s). The lists contain IPv4 addresses only.
 
-**Policy:** `read, write, test`
-**Schedule:** Every 3 hours, 5 minutes after download
-
-This script performs differential updates — only adding new entries and removing stale ones. This approach maintains continuous protection without any gap in coverage.
+RAW rules are evaluated top to bottom, so the drops must come before any general accept rule. To exempt addresses from the blocklist (a CDN, a game service), add an accept rule above the drops; it skips the rest of the RAW chain only, and the filter rules still apply:
 
 ```routeros-script
-:log info "blocklist-DIFF: === STARTED ==="
-:local startTime [/system clock get time]
-
-# Disable logging to prevent flood
-/system logging disable 0
-
-# Import new IPs into global array
-/import file-name=blocklist_ga.rsc
-:global newips
-
-:local totalNew [:len $newips]
-:if ($totalNew = 0) do={
-    /system logging enable 0
-    :log error "blocklist-DIFF: Empty import, aborting"
-    :error "Empty blocklist import"
-}
-
-:log info "blocklist-DIFF: Imported $totalNew entries"
-
-# Process existing entries
-/ip firewall address-list
-
-:local prdkeys [find list=prod_blocklist]
-:local countKept 0
-:local countRemoved 0
-
-:foreach entryId in=$prdkeys do={
-    :local addr [get $entryId address]
-    :local keyindex [:find $newips $addr]
-
-    # Check for nil (not found) - fixes index 0 bug
-    :if ([:typeof $keyindex] != "nil") do={
-        # EXISTS in new list - keep it, blank out to skip later
-        :set ($newips->$keyindex) ""
-        :set countKept ($countKept + 1)
-    } else={
-        # NOT in new list - remove
-        remove $entryId
-        :set countRemoved ($countRemoved + 1)
-    }
-}
-
-:log info "blocklist-DIFF: Kept $countKept, removed $countRemoved"
-
-# Add NEW entries (non-empty values remaining in $newips)
-:local countAdded 0
-
-:foreach addr in=$newips do={
-    :if ($addr != "") do={
-        add list=prod_blocklist address=$addr
-        :set countAdded ($countAdded + 1)
-    }
-}
-
-# Cleanup
-:set newips
-
-:local endTime [/system clock get time]
-:local duration ($endTime - $startTime)
-
-/system logging enable 0
-
-:local finalCount [:len [/ip firewall address-list find list=prod_blocklist]]
-
-:log info "blocklist-DIFF: === COMPLETED ==="
-:log info "blocklist-DIFF: Removed=$countRemoved, Added=$countAdded, Total=$finalCount"
-:log info "blocklist-DIFF: Duration=$duration"
+/ip firewall raw add chain=prerouting action=accept src-address-list=blocklist_bypass comment="blocklist bypass" place-before=[find comment="blocklist-update: drop from listed sources"]
 ```
 
-### Important Notes
+To find out which entry blocked a connection, log the drops for a while, then look the address up in `blocklist.txt`. Replies to a LAN device show the router's public address as destination, because RAW runs before NAT.
 
-1. **First Run:** On initial setup, `prod_blocklist` won't exist. The script will simply add all entries.
+```routeros-script
+/ip firewall raw set [find comment~"blocklist-update"] log=yes log-prefix="BL"
+/log print where message~"BL"
+```
 
-2. **Index 0 Bug Fix:** Previous versions used `:if ($keyindex > 0)` which incorrectly handled IPs at array index 0. The fix uses `:if ([:typeof $keyindex] != "nil")` to properly detect if an IP was found.
+### How the Update Works
 
-3. **Performance:** Expect 90-150 seconds for ~25k entries on a CCR-1036 or CCR-2004
+1. **Safe failure:** the update aborts before changing anything if another run of the script is still in progress, if the download fails, if the file is missing, unreadable or not valid JSON, if the header's entry count does not match what was loaded, or if the list would change by more than `maxChange` (30) percent. The current list then stays as it is. If a single entry can't be added, the others still are, and the run ends with a warning. It never adds an entry wider than `/minPrefix` (10); the widest entries in the lists are FireHOL Level 1's /12s.
 
-4. **Logging:** The script disables logging rule 0 during execution to prevent thousands of "address-list entry added/removed" log messages.
+2. **First run:** if `prod_blocklist` doesn't exist yet, the script adds all entries; the size check only applies once the list exists.
+
+3. **Policies:** a scheduled `/tool fetch` that saves a file needs `ftp` (since RouterOS 7.13) and `sensitive`, on the script **and** on its scheduler entry (`ftp,read,write,sensitive,test`). A manual run works without them, because it uses your login's rights, so a missing policy only shows in scheduled runs: `cannot open file: permission denied`.
+
+4. **Stale lists:** the script logs a warning when the list it downloaded was generated more than `maxAge` (12) hours ago, which means the GitHub Actions schedule has stopped. CI runs every 3 hours, but GitHub skips scheduled runs at times; gaps of up to 9 hours have been seen. The list is still applied. This needs the router's clock to be correct (NTP).
+
+5. **Security:** the script verifies the server's TLS certificate (`check-certificate=yes-without-crl`). RouterOS 7.21+ trusts its built-in root CAs for `fetch` by default (`/certificate settings print`). As a second line of defence, the size and prefix limits above stop a tampered list from blocking large parts of the internet.
+
+6. **Logging:** the script doesn't change logging rules. RouterOS logs every added or removed entry as `system,info` ("address list entry added by ..."), so a run can add a few thousand lines to the log.
+
+7. **Why JSON blocks:** RouterOS arrays are copied whenever they are modified, so building a list one entry at a time is slow. `:deserialize` builds each block's keyed array natively in one call. The blocks are 32 KB because `/file read` reads at most that much per call.
+
+8. **Performance:** the GitLab upstream measured 21–24 s for its large list (~36k entries) on a CCR2004-16G-2S+. The hEX has a much slower CPU; `:put [:time {/system script run blocklist-update}]` shows yours.
+
+### Troubleshooting
+
+All messages start with `blocklist-DIFF:` (`/log print where message~"blocklist-DIFF"`).
+
+- **Scheduled runs fail with `cannot open file: permission denied`**, manual runs work: the script or its scheduler entry is missing a policy. Run `install.rsc` again; self-test T16 checks this.
+- **`is unreadable or not valid JSON` on every run, and self-test T1 fails:** RouterOS may not support `:deserialize`'s `options=json.no-string-conversion`. Remove that option from `blocklist-update.rsc`, then run `install.rsc` and the self-test again.
+- **`download failed`:** check DNS and the clock, and that `/certificate settings print` shows the built-in trust store. Running the script's `/tool fetch` line by hand shows the actual error.
+- **`list would change from X to Y entries (limit 30%), aborting`:** expected once after switching tiers (raise `maxChange` for one run). Otherwise compare with the run summaries in [Actions](https://github.com/Davie3/mikrotik_blocklist/actions); CI refuses to publish such jumps, so this points to a broken download or an outdated local list.
+- **`list was generated N hours ago`:** the lists stopped updating. Check [Actions](https://github.com/Davie3/mikrotik_blocklist/actions) for failed or missing runs; a stale feed freezes publishing until it's fixed (see **Stale feeds** under [Blocklist Generation](#blocklist-generation)).
+- **`another run is still in progress, skipped`:** a run started while another one was busy. Harmless; if it shows on every run, check `/system script job print` for a hung job.
+- **Self-test T13 fails with `stale-logs=1`:** the last CI run is more than 12 hours old, or the router clock is wrong.
+
+### .rsc Lists
+
+The `.rsc` and `blocklist_ga*.rsc` files are published too, but the update script doesn't use them. `<list>.rsc` adds every entry to `new_blocklist` when imported; `blocklist_ga*.rsc` fills the global array `$newips`. Both run downloaded code on the router, and building `$newips` entry by entry is slow on small devices, because RouterOS copies the array on every append.
 
 ---
 
 ## License
 
 This project aggregates publicly available threat intelligence feeds. Please respect the terms of use of each source.
+
+**RouterOS scripts:** [`routeros/blocklist-update.rsc`](routeros/blocklist-update.rsc) and [`routeros/selftest.rsc`](routeros/selftest.rsc) are adapted from the [GitLab upstream](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)'s update script and self-test, and are licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0): free for personal use and for use by non-commercial organizations, not for commercial use.
+
+```text
+Required Notice: Copyright 2021-2026 multiduplikator (https://gitlab.com/multiduplikator-group/mikrotik_blocklist)
+```
