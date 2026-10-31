@@ -105,7 +105,7 @@ The default is the Standard list (~28k entries), the right size for small device
 
 The drops are in the RAW table, as in MikroTik's [Building Advanced Firewall](https://help.mikrotik.com/docs/display/ROS/Building+Advanced+Firewall) guide: RAW rules run before connection tracking, so dropped packets cost the router as little as possible. Two rules cover both directions:
 
-```
+```routeros-script
 /ip firewall raw
 add chain=prerouting action=drop in-interface-list=WAN src-address-list=prod_blocklist comment="blocklist-update: drop from listed sources"
 add chain=prerouting action=drop in-interface-list=LAN dst-address-list=prod_blocklist comment="blocklist-update: drop to listed destinations"
@@ -118,13 +118,13 @@ The interface lists keep each rule to one direction. Without them, the destinati
 
 RAW rules are evaluated top to bottom, so the drops must come before any general accept rule. To exempt addresses from the blocklist (a CDN, a game service), add an accept rule above the drops; it skips the rest of the RAW chain only, and the filter rules still apply:
 
-```
+```routeros-script
 /ip firewall raw add chain=prerouting action=accept src-address-list=blocklist_bypass comment="blocklist bypass" place-before=[find comment="blocklist-update: drop from listed sources"]
 ```
 
 To find out which entry blocked a connection, log the drops for a while, then look the address up in `blocklist.txt`. Replies to a LAN device show the router's public address as destination, because RAW runs before NAT.
 
-```
+```routeros-script
 /ip firewall raw set [find comment~"blocklist-update"] log=yes log-prefix="BL"
 /log print where message~"BL"
 ```
@@ -155,18 +155,13 @@ All messages start with `blocklist-DIFF:` (`/log print where message~"blocklist-
 - **`is unreadable or not valid JSON` on every run, and self-test T1 fails:** RouterOS may not support `:deserialize`'s `options=json.no-string-conversion`. Remove that option from `blocklist-update.rsc`, then run `install.rsc` and the self-test again.
 - **`download failed`:** check DNS and the clock, and that `/certificate settings print` shows the built-in trust store. Running the script's `/tool fetch` line by hand shows the actual error.
 - **`list would change from X to Y entries (limit 30%), aborting`:** expected once after switching tiers (raise `maxChange` for one run). Otherwise compare with the run summaries in [Actions](https://github.com/Davie3/mikrotik_blocklist/actions); CI refuses to publish such jumps, so this points to a broken download or an outdated local list.
-- **`list was generated N hours ago`:** the lists stopped updating. Check [Actions](https://github.com/Davie3/mikrotik_blocklist/actions) for failed or missing runs; a stale feed freezes publishing until it's fixed (see [Failure policy](#failure-policy-all-or-nothing)).
+- **`list was generated N hours ago`:** the lists stopped updating. Check [Actions](https://github.com/Davie3/mikrotik_blocklist/actions) for failed or missing runs; a stale feed freezes publishing until it's fixed (see **Stale feeds** under [Blocklist Generation](#blocklist-generation)).
 - **`another run is still in progress, skipped`:** a run started while another one was busy. Harmless; if it shows on every run, check `/system script job print` for a hung job.
 - **Self-test T13 fails with `stale-logs=1`:** the last CI run is more than 12 hours old, or the router clock is wrong.
 
 ### .rsc Lists
 
-<details>
-<summary>The <code>.rsc</code> and <code>blocklist_ga*.rsc</code> files are published too, but the update script doesn't use them.</summary>
-
-`<list>.rsc` adds every entry to `new_blocklist` when imported; `blocklist_ga*.rsc` fills the global array `$newips`. Both run downloaded code on the router, and building `$newips` entry by entry is slow on small devices, because RouterOS copies the array on every append.
-
-</details>
+The `.rsc` and `blocklist_ga*.rsc` files are published too, but the update script doesn't use them. `<list>.rsc` adds every entry to `new_blocklist` when imported; `blocklist_ga*.rsc` fills the global array `$newips`. Both run downloaded code on the router, and building `$newips` entry by entry is slow on small devices, because RouterOS copies the array on every append.
 
 ---
 
@@ -176,4 +171,6 @@ This project aggregates publicly available threat intelligence feeds. Please res
 
 **RouterOS scripts:** [`routeros/blocklist-update.rsc`](routeros/blocklist-update.rsc) and [`routeros/selftest.rsc`](routeros/selftest.rsc) are adapted from the [GitLab upstream](https://gitlab.com/multiduplikator-group/mikrotik_blocklist)'s update script and self-test, and are licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0): free for personal use and for use by non-commercial organizations, not for commercial use.
 
+```text
 Required Notice: Copyright 2021-2026 multiduplikator (https://gitlab.com/multiduplikator-group/mikrotik_blocklist)
+```
