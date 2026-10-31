@@ -27,7 +27,7 @@ def net(cidr):
 
 def oracle(cidr_strings):
     """Minimal CIDR cover of the inputs, computed by the ipaddress module."""
-    nets = ipaddress.collapse_addresses(ipaddress.ip_network(c, strict=False) for c in cidr_strings)
+    nets = ipaddress.collapse_addresses(ipaddress.IPv4Network(c, strict=False) for c in cidr_strings)
     return [str(n.network_address) if n.prefixlen == 32 else str(n) for n in nets]
 
 
@@ -100,7 +100,7 @@ class TestBuild(unittest.TestCase):
             e = min(s + rnd.randrange(1 << rnd.randrange(1, 20)), 0xDFFFFFFF)
             want = [
                 str(n.network_address) if n.prefixlen == 32 else str(n)
-                for n in ipaddress.summarize_address_range(ipaddress.ip_address(s), ipaddress.ip_address(e))
+                for n in ipaddress.summarize_address_range(ipaddress.IPv4Address(s), ipaddress.IPv4Address(e))
             ]
             self.assertEqual(g.cidrs(s, e), want, (s, e))
 
