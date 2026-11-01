@@ -4,16 +4,16 @@
     "sha256": "6210000415a8a362d44986684a6e6cf31421eacea636e2ac764fd7ed75f73e1d"
   },
   "blocklist_de": {
-    "changed": "2026-11-01T12:33:57Z",
-    "sha256": "29a8cb21f8ca729b30ee78a28eff401e6af79687e7c8ed090991eba857e02288"
+    "changed": "2026-11-01T19:21:12Z",
+    "sha256": "78a0383709211df35033eef3fd6dc0c4dbecd7595ed5f5dc503db94f4c89da21"
   },
   "c2intel": {
-    "changed": "2026-11-01T03:54:59Z",
-    "sha256": "2e0e90ffd372fb50b1f1fb72628c5e545156668df3bde424d8bbc00a1a0e847d"
+    "changed": "2026-11-01T19:21:12Z",
+    "sha256": "7cf012ebca95cffd40c46073339c3bad363adfc651455e453570a38bb78cac9d"
   },
   "cinsarmy": {
-    "changed": "2026-11-01T12:33:57Z",
-    "sha256": "f320d5cbf0d761485524d476af55a99369db1bb8cdadc04f92b7e798803e5371"
+    "changed": "2026-11-01T19:21:12Z",
+    "sha256": "898e498f7c01a5357c9eec471e1ba93ccde95833f3a2f9df263c1c837920e994"
   },
   "dshield": {
     "changed": "2026-11-01T03:54:59Z",
@@ -36,12 +36,12 @@
     "sha256": "2c7c5dfea988707d2f7442380f4cc27c266aacb75cae00518556f609b25e34b1"
   },
   "spamhaus_drop": {
-    "changed": "2026-10-31T18:55:28Z",
-    "sha256": "dc19b603e2af38891343420c49e5d48e987a92660e3461e14a56666d8c28871f"
+    "changed": "2026-11-01T19:21:12Z",
+    "sha256": "0ebab655a92eb9260f1056b2ee45684adf3e492bdb6428b26611a65bbd5a9873"
   },
   "tor_exits": {
-    "changed": "2026-11-01T12:33:57Z",
-    "sha256": "d2081a1e68a2af9a21fbeaa1bfe21456381220e48909f7a6100e31374485583d"
+    "changed": "2026-11-01T19:21:12Z",
+    "sha256": "3fffe8d00bdd6666da2ccc39e3c019a1178275c6ba4f1ab3747c134651beea3a"
   },
   "turris": {
     "changed": "2026-10-31T23:55:59Z",
