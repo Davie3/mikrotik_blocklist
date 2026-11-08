@@ -4,28 +4,28 @@
     "sha256": "08a0b056ca5e4a5b804f0d89283427fc611274a390a426f029adddf19d951fd3"
   },
   "blocklist_de": {
-    "changed": "2026-11-08T03:59:23Z",
-    "sha256": "baeb9ef68b6b1d73238226b03f7e6a6a6436933bae260f64dcfded6a7776d502"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "864837f3b5b2cf64a0ead7d70c8a69006c8bb524caac2c29c7560d3cd5c5401b"
   },
   "c2intel": {
-    "changed": "2026-11-08T03:59:23Z",
-    "sha256": "063be252741b5311c35e30ff51bf8d32734ff103727cb9ec32b7e944dc0e935a"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "8bfd9e84fa1f522ae31d6dc6cc9b0860412d047723481a82e3863908a5132a33"
   },
   "cinsarmy": {
-    "changed": "2026-11-08T03:59:23Z",
-    "sha256": "190aa68ae942b0586ebcb69fefb481c7ed109c312266341fa22b884cb208623d"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "69a1e69219255ae5f718ab38ced0944c37c738811265fa0c0642f23110fbc38a"
   },
   "dshield": {
-    "changed": "2026-11-08T03:59:23Z",
-    "sha256": "d45b7116eee000f74644ca91bc7a463f85dbae63bdaf7337867e33f1d7b7f08c"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "894cfb1164ad836cd64138d763f7d6fdc7ea63a6002afed1675020b32bb4356c"
   },
   "et_compromised": {
     "changed": "2026-11-06T01:21:12Z",
     "sha256": "cab8bc6edac2ec06aea9fca2bfab7b9ca526cd1a05330775d1f26775336db30e"
   },
   "firehol_l1": {
-    "changed": "2026-11-08T03:59:23Z",
-    "sha256": "a830f32a0c7785e71ab33e904e53ee69b1d4b7ad6ada994778b892757489effe"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "c02b414d16031852e37e849eda39a59f8348d1855205552704db59f1ef771ca0"
   },
   "ipsum_l1": {
     "changed": "2026-11-08T03:59:23Z",
@@ -36,12 +36,12 @@
     "sha256": "7847410c241aacc4b0ec59b32b67e6df660bdaeca27e75e6999e947c0aff708a"
   },
   "spamhaus_drop": {
-    "changed": "2026-11-06T18:48:10Z",
-    "sha256": "3bda252cfdf8051c18318a111fdcde6cab358693364537469ad286b5e6f300a2"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "8c588d9f7428c92f361b328c29c3d8a96d491739adeedfd07a63057f958630d5"
   },
   "tor_exits": {
-    "changed": "2026-11-08T03:59:23Z",
-    "sha256": "c5329ec79819c63479d2006a6a334db9f153d5ef5a280b9e326ee4cd2dedbf4e"
+    "changed": "2026-11-08T12:39:26Z",
+    "sha256": "039bff860c46f9693a395553e5c4929e9d4b3f2fd694c67d4c4770ca2c228f91"
   },
   "turris": {
     "changed": "2026-11-08T03:59:23Z",
