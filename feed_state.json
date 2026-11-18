@@ -4,16 +4,16 @@
     "sha256": "2cbe90cdfee62be6c18d5ccbee03b0ab4e5e0a8b4c44a5ccc5e3338604904a93"
   },
   "blocklist_de": {
-    "changed": "2026-11-18T11:00:13Z",
-    "sha256": "d6dfd40af3f206e072d74bbb4ea4a07a10a2e5a5ffc29ef0cb0e47958101b7da"
+    "changed": "2026-11-18T19:53:07Z",
+    "sha256": "fdbf57062494a1388aa7a7957ce62645cc4b148249ffccac6872fc45738f87b2"
   },
   "c2intel": {
-    "changed": "2026-11-18T11:00:13Z",
-    "sha256": "0ce63c5940cf3f6547ceb5d4e70a73facab692cf6199b0b764668857d3465b5d"
+    "changed": "2026-11-18T19:53:07Z",
+    "sha256": "100e8ea6eaa0120caed27e161dc82a5f3b23015ac64f150abdacab44af198ef2"
   },
   "cinsarmy": {
-    "changed": "2026-11-18T11:00:13Z",
-    "sha256": "a994c4b1b18451453d43cffa279ece07fb43a5a1a916c5b13b257f73d85c1c82"
+    "changed": "2026-11-18T19:53:07Z",
+    "sha256": "cb19fc9c68617fae47be8fe9d86ffd4f56a6d0b89e06e010a68a4a7ebd7bd050"
   },
   "dshield": {
     "changed": "2026-11-18T11:00:13Z",
@@ -24,8 +24,8 @@
     "sha256": "cb27a188f165b7b2167de1845b76efa7473e63bcacb961cd5dff55200dad8db4"
   },
   "firehol_l1": {
-    "changed": "2026-11-18T11:00:13Z",
-    "sha256": "832ffbdca5af8e131b13e96cebbc040dfe69c3ab3772490afd17f150ab763c5a"
+    "changed": "2026-11-18T19:53:07Z",
+    "sha256": "aa388514486437644877f1af9c13a74c66effef674d1a8f1c9f77672c96bc4bf"
   },
   "ipsum_l1": {
     "changed": "2026-11-18T02:43:18Z",
@@ -36,12 +36,12 @@
     "sha256": "5a6d38bfa54e41d8903e3ba0238a297c7c62bc25e64e59bdcaf8082c4884ca15"
   },
   "spamhaus_drop": {
-    "changed": "2026-11-17T18:05:33Z",
-    "sha256": "eb527e1a70dd3b851569a8aff5fa2bacc5e070a702b6856f519ac8a975c8a907"
+    "changed": "2026-11-18T19:53:07Z",
+    "sha256": "8d09004eb425d5ca5711694296611a43382060cf4cf13025e5003f6e2458d9ba"
   },
   "tor_exits": {
-    "changed": "2026-11-18T11:00:13Z",
-    "sha256": "54ccde3442de0dadf2da76199e96e48fd61660bbc4bbcfbe085c45d50488742a"
+    "changed": "2026-11-18T19:53:07Z",
+    "sha256": "514ba31d8f4a2653d6c5816931e0c47f59ff0610b327e545540a8d7e0cd05efe"
   },
   "turris": {
     "changed": "2026-11-18T02:43:18Z",
