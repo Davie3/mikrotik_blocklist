@@ -4,28 +4,28 @@
     "sha256": "cbcb7d83ea3a1aad9f13e9673432c5cb6379cef467402e4baeab81eeea023b59"
   },
   "blocklist_de": {
-    "changed": "2026-11-19T02:12:51Z",
-    "sha256": "c4c61a3e64b9c07c1a2206c73d0444cbedc9a9b6109b996b97d6505006cfc97c"
+    "changed": "2026-11-19T11:02:49Z",
+    "sha256": "4bff833bc0e39db63172bbb348c9c93ae41499fc8de21c586800f6e6888755ca"
   },
   "c2intel": {
     "changed": "2026-11-18T19:53:07Z",
     "sha256": "100e8ea6eaa0120caed27e161dc82a5f3b23015ac64f150abdacab44af198ef2"
   },
   "cinsarmy": {
-    "changed": "2026-11-19T02:12:51Z",
-    "sha256": "0da86e017e4490dd7c838229cd4a54ea4edffb599a2ba928f0fba94df178a0a3"
+    "changed": "2026-11-19T11:02:49Z",
+    "sha256": "401193c36d81559dd4015abb9ec22f91010005137fb067c1d4bd0d20938b4719"
   },
   "dshield": {
-    "changed": "2026-11-19T02:12:51Z",
-    "sha256": "b79b7cd5dcc70feb7a09be01b4f0480eeb336872e9a7ba51a52bbb807b182004"
+    "changed": "2026-11-19T11:02:49Z",
+    "sha256": "87835403a17f5471e77ab124c2bcc472385093338ff742eb232737f1cd7d37d2"
   },
   "et_compromised": {
     "changed": "2026-11-19T02:12:51Z",
     "sha256": "1113405f6e09e79ab8da382b9edec5167e4cfadf1a53beb74d0cf7e7cba94869"
   },
   "firehol_l1": {
-    "changed": "2026-11-19T02:12:51Z",
-    "sha256": "b7119c1c33ab5c88d618ea99bce5425d1ce6147480610b5a0b61303df8f6f87c"
+    "changed": "2026-11-19T11:02:49Z",
+    "sha256": "83b60bb6d4d79d0b9076689a9443be232783a6bf18277e0f97df034d17c04f15"
   },
   "ipsum_l1": {
     "changed": "2026-11-19T02:12:51Z",
@@ -40,8 +40,8 @@
     "sha256": "8d09004eb425d5ca5711694296611a43382060cf4cf13025e5003f6e2458d9ba"
   },
   "tor_exits": {
-    "changed": "2026-11-19T02:12:51Z",
-    "sha256": "9c7a335cf6e4edc4c52287c3a8f7932998569ed83b8d112e5c22a6c5ad0b40a5"
+    "changed": "2026-11-19T11:02:49Z",
+    "sha256": "cb8dfb6758b4b066768290d03296c697b2da53060788963fa168d177618ba664"
   },
   "turris": {
     "changed": "2026-11-19T02:12:51Z",
