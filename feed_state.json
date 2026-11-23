@@ -1,23 +1,23 @@
 {
   "binarydefense": {
-    "changed": "2026-11-22T00:53:27Z",
-    "sha256": "13a1af67c64ef92ba7ba51a1ce4a18c0149fa92e58bebc952cb905fecd8f1756"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "07de893bfacafc46c46636f43d8f7c02adc8a886639588aee3155fb8176554f4"
   },
   "blocklist_de": {
-    "changed": "2026-11-22T18:58:03Z",
-    "sha256": "2913ecd649f4b8ee52c1ee280824a9699ab529f730f0cf9f69dc4d8e9d0c750c"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "1ac91bda2e865c4c683870ac7f858ecae9e775c3d8e2c42ac81dfcb614dd46fc"
   },
   "c2intel": {
-    "changed": "2026-11-22T18:58:03Z",
-    "sha256": "583b92de8976b954916727c472c2b788f6fd5facb42a0ad501d325d9847d9b18"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "693c1014ecce87b15997421cb2e35eaced97782c6e97feb47d4989b7562aa4dc"
   },
   "cinsarmy": {
-    "changed": "2026-11-22T18:58:03Z",
-    "sha256": "c36e480c76c95dfa0b01b5e6d697aeabbd7b1081fbb186cb7f646fad80aa27d3"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "7ad2aca6780ccca296d6ed9c56f0f16f473a9bc6331fe8eb172613fe9e72e15a"
   },
   "dshield": {
-    "changed": "2026-11-22T18:58:03Z",
-    "sha256": "a12a07ed92b889292f2b10472f5e720ddb196d4be62361b28617a4c2c3d9093c"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "472d80c57a75495351fd65ac7eaaa6bf68ca8e76329b6a5d96ab3358fc493f6d"
   },
   "et_compromised": {
     "changed": "2026-11-21T01:57:14Z",
@@ -40,11 +40,11 @@
     "sha256": "829d08cf35d2a15c0837bb89baee7b404d83642c7518e0d1811b9fd0bb963b9b"
   },
   "tor_exits": {
-    "changed": "2026-11-22T18:58:03Z",
-    "sha256": "bb60ff5485add7de3d189f2d9bb6951dc5b26bbc36cb339227f1a2f294467656"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "cfefb17c29b05ceff7d225ad22bc3f9d2531a58f3d6ab1f597c6f61f3b57befb"
   },
   "turris": {
-    "changed": "2026-11-22T00:53:27Z",
-    "sha256": "69a1f72c2b4647677cde86a750ab254d31d3b168a681285471802ad8c9960a8f"
+    "changed": "2026-11-23T01:22:09Z",
+    "sha256": "703d7640008f256fc7a4ec304c9d691d4c4c5688b1e980e92556f70725b5793a"
   }
 }
