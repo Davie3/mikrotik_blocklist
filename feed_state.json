@@ -4,24 +4,24 @@
     "sha256": "07de893bfacafc46c46636f43d8f7c02adc8a886639588aee3155fb8176554f4"
   },
   "blocklist_de": {
-    "changed": "2026-11-23T11:41:11Z",
-    "sha256": "9bff96a388c6eb9d85c57d5e4da839481d8c610e81d04d7eb88267d85530ad54"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "74814c9bd2f14d660de10f7a390bc45841cad7507fedf22b19042bf4a5765faf"
   },
   "c2intel": {
-    "changed": "2026-11-23T11:41:11Z",
-    "sha256": "39f9e106c0fe30fda7ef6f15b211e9d0f09b00fa675a6b8e499e4664f114e5f2"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "ddcd5350a9dfff458b70b5ae146eb175ef1d6a44cdece779a7c16f549f0ab882"
   },
   "cinsarmy": {
-    "changed": "2026-11-23T11:41:11Z",
-    "sha256": "801bdcc6393356fdb3bae2d9b0e60bf9af28983e63c7658e4b16d877469a57bd"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "6d978096ea33dfad3b6cb85654c362bbf2effe2c95ca1e99199735af4f673551"
   },
   "dshield": {
-    "changed": "2026-11-23T11:41:11Z",
-    "sha256": "9a082ae1da98d01dc9535e6afb0e3fbd66a33e1bc0a3d6936e877fb42ef068a3"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "f6fb2c1b12491a434e8d14c78bd1f6f23fb6527d8f31f87c93297720c9695b22"
   },
   "et_compromised": {
-    "changed": "2026-11-21T01:57:14Z",
-    "sha256": "968ebdbad7dbe2aaa1b54a346639b8142c854780f11d3a050b0b1310fc39b6b8"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "ca83098a00f1beda9896afa9293e95dd03b72e92d017cc52279168f9485f555e"
   },
   "firehol_l1": {
     "changed": "2026-11-23T11:41:11Z",
@@ -40,11 +40,11 @@
     "sha256": "829d08cf35d2a15c0837bb89baee7b404d83642c7518e0d1811b9fd0bb963b9b"
   },
   "tor_exits": {
-    "changed": "2026-11-23T11:41:11Z",
-    "sha256": "d50e464ebe561ddbe3620fe5f52947b78c3906c5f777e4071063ec83cd6c6019"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "4a041202c55650228e7e89d26a954479d2ffe0e090309ef170e1c598075a7750"
   },
   "turris": {
-    "changed": "2026-11-23T01:22:09Z",
-    "sha256": "703d7640008f256fc7a4ec304c9d691d4c4c5688b1e980e92556f70725b5793a"
+    "changed": "2026-11-23T23:17:18Z",
+    "sha256": "6468286f9b9a10d4aed107bda1e2725942f3650e31c91afec6f56d4bd66f3494"
   }
 }
