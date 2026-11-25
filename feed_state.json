@@ -4,28 +4,28 @@
     "sha256": "c02ed0cb478ed4926c568fed3bad0a4a3993e3714979cb26940bae77f9a5281f"
   },
   "blocklist_de": {
-    "changed": "2026-11-25T03:56:36Z",
-    "sha256": "a5105c7456e97e4c742a1b744060e910f1ff620a91081d131e90c8974c9cf092"
+    "changed": "2026-11-25T16:41:55Z",
+    "sha256": "2130653955c68ef7fa222eedc435eb45f80f483c15a81cab38f1f80de39551dc"
   },
   "c2intel": {
-    "changed": "2026-11-24T19:53:29Z",
-    "sha256": "a26dfef4bc3f2d065b1a699e5a22cb1a3f333197087b8dee9bcfec41f1f682ae"
+    "changed": "2026-11-25T16:41:55Z",
+    "sha256": "c71614047aaf54d56bb26da8e36e8b7d1d780cb1e728d457c0fea55680f6d206"
   },
   "cinsarmy": {
-    "changed": "2026-11-25T03:56:36Z",
-    "sha256": "16734d3c87f9ec299f36ff3e614fd96744050e55c8e0fb911ed1ccb006e493ea"
+    "changed": "2026-11-25T16:41:55Z",
+    "sha256": "ef3a4f851fdbe79a589e23c4cc5c756435caf266b537496727def5fcbf74d4e6"
   },
   "dshield": {
-    "changed": "2026-11-25T03:56:36Z",
-    "sha256": "a9015ee20fe8d5369ece95842c431542037c9589becdfced2862e54540e394ba"
+    "changed": "2026-11-25T16:41:55Z",
+    "sha256": "8ab49098bdeb0c921c1ecd9d2b881767d35d3fe26178bb7da6ffae88bfa79d3e"
   },
   "et_compromised": {
     "changed": "2026-11-25T03:56:36Z",
     "sha256": "f6c3a4410e0dafa58883fa70d9258882d4bb0bcfab8b3baec61d1bacdc9bfc68"
   },
   "firehol_l1": {
-    "changed": "2026-11-25T03:56:36Z",
-    "sha256": "deb3ab8065dde42bcde4f9671636f7ebdb4dafce47f9c5205b52b0a4eaaa792f"
+    "changed": "2026-11-25T16:41:55Z",
+    "sha256": "71e9d2b8e1ff50dc74f517d1e55829754ddebe9fd8e9d2e1dd7c52aaaaf15f1d"
   },
   "ipsum_l1": {
     "changed": "2026-11-25T03:56:36Z",
@@ -40,8 +40,8 @@
     "sha256": "6c4776a576651903f1ff8762682a4897e788df59120b8969ce8a8c184e1116fe"
   },
   "tor_exits": {
-    "changed": "2026-11-25T03:56:36Z",
-    "sha256": "3ef5f229aa8352048ea87ccbaa0b9168295a7fd5f2269c979dd74a39813595c7"
+    "changed": "2026-11-25T16:41:55Z",
+    "sha256": "dc6bf6901e2e88291aa727194fc0e70d5e1835b95852fbc56d39102a837b0a0f"
   },
   "turris": {
     "changed": "2026-11-25T03:56:36Z",
